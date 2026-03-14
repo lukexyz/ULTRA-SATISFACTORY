@@ -1,0 +1,10 @@
+# ⚡ Streamlit theme config — dark background at the framework level.
+# This ensures the browser paints black (not white) during full page reloads,
+# eliminating the white flash when navigating via recipe chip clicks.
+
+[theme]
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#0f0f23"
+primaryColor = "#e8d44d"
+textColor = "#eeeeee"
+font = "monospace"

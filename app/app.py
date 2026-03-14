@@ -8,6 +8,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ultra_satisfactory.data import load_data, wiki_image_url, get_item_recipe, list_items
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
+# ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
+# Injects inline dark background + color-scheme meta into <head> before any
+# JS/CSS loads. Idempotent — skips if already patched. Re-applies after upgrades.
+def _patch_streamlit_index():
+    _INJECT = '<meta name="color-scheme" content="dark"><style>html,body{background:#000!important}</style>'
+    index = Path(st.__file__).parent / "static" / "index.html"
+    try:
+        html = index.read_text()
+        if _INJECT not in html:
+            html = html.replace("<head>\n", f"<head>\n    {_INJECT}\n", 1)
+            index.write_text(html)
+    except Exception:
+        pass  # non-fatal — worst case is the old white flash
+_patch_streamlit_index()
+
 st.set_page_config(
     page_title="SATISFACTORY CONTROL",
     page_icon="⚙️",
@@ -334,8 +349,8 @@ st.markdown("""
     /* The actual st.button — tall, visual content hidden */
     div.stButton > button {
         width: 100%;
-        height: 230px !important;
-        min-height: 230px !important;
+        height: 350px !important;
+        min-height: 350px !important;
         font-size: 0 !important;
         color: transparent !important;
         background: linear-gradient(145deg, #ffffff, #d0d0d0, #bbbbbb) !important;
@@ -393,23 +408,28 @@ st.markdown("""
         position: relative;
         z-index: 2;
         pointer-events: none;
-        margin-top: -235px;
+        margin-top: -355px;
         margin-bottom: 5px;
-        height: 230px;
+        height: 350px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 10px 8px;
+        padding: 16px 20px 10px;
     }
     .obj-card-visual img {
         border-radius: 10px;
         border: 2px solid #555;
         background: #1a1a2e;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         image-rendering: pixelated;
         filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        width: calc(100% - 24px);
+        max-width: 200px;
+        height: auto;
+        aspect-ratio: 1;
+        object-fit: contain;
     }
     .obj-card-visual .obj-name {
         font-family: 'Orbitron', monospace;
@@ -543,7 +563,7 @@ with tab_objectives:
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:
-            img_url = wiki_image_url(obj["name"], 128)
+            img_url = wiki_image_url(obj["name"], 256)
 
             # The actual st.button — tall, text hidden via CSS
             if st.button("select", key=f"obj_btn_{i}", use_container_width=True):
@@ -555,7 +575,7 @@ with tab_objectives:
             # Visual overlay — pulled up over the button via negative margin
             st.markdown(f"""
             <div class="obj-card-visual">
-                <img src="{img_url}" width="96" height="96">
+                <img src="{img_url}">
                 <div class="obj-name">{obj["name"]}</div>
                 <div class="obj-qty">{obj["required"]:,}</div>
                 <div class="obj-label">required</div>

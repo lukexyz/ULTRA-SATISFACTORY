@@ -368,14 +368,28 @@ st.markdown("""
 
     /* ---- ITEMS TAB ---- */
 
-    /* Sticky search container */
-    .items-search-wrap {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: #000000;
-        padding: 0.5rem 0 0.75rem 0;
-        margin-bottom: 0.25rem;
+    /* Pure HTML search input */
+    #items-search {
+        width: 100%;
+        box-sizing: border-box;
+        background: #111111;
+        border: 1px solid #333333;
+        border-radius: 6px;
+        color: #cccccc;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.75rem;
+        outline: none;
+        transition: border-color 0.15s ease;
+    }
+    #items-search:focus {
+        border-color: #666666;
+        box-shadow: 0 0 8px rgba(255,255,255,0.1);
+    }
+    #items-search::placeholder {
+        color: #444444;
     }
 
     /* Item list rows — the invisible button itself */
@@ -553,69 +567,103 @@ with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
-    # Sticky search bar wrapper
-    st.markdown('<div class="items-search-wrap">', unsafe_allow_html=True)
-    search_query = st.text_input(
-        label="Search items",
-        placeholder="Search items...",
-        key="items_search",
-        label_visibility="collapsed",
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Pure HTML instant-search input (fires on every keystroke via JS oninput)
+    st.markdown("""
+    <input id="items-search" type="text" placeholder="Search items..." autocomplete="off">
+    """, unsafe_allow_html=True)
 
-    # Load and filter item list
+    # Load full item list (no server-side filtering — JS handles it client-side)
     all_items = list_items(data)
-    if search_query:
-        q = search_query.lower()
-        filtered = [it for it in all_items if q in it["name"].lower()]
-    else:
-        filtered = all_items
 
-    if not filtered:
-        st.markdown("""
-        <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
-                    text-align:center;letter-spacing:0.2em;padding:2rem 0;">NO ITEMS FOUND</div>
-        """, unsafe_allow_html=True)
-    else:
-        for it in filtered:
-            name = it["name"]
-            img_url = it["image_url"]
-            is_selected = (st.session_state.items_selected == name)
+    for it in all_items:
+        name = it["name"]
+        img_url = it["image_url"]
+        is_selected = (st.session_state.items_selected == name)
 
-            # Wrapper div — adds active class if selected (for CSS targeting)
-            active_cls = "item-row-active" if is_selected else ""
-            st.markdown(f'<div class="item-row-btn {active_cls}">', unsafe_allow_html=True)
+        # Wrapper div — data-name for JS filtering; active class for CSS targeting
+        active_cls = "item-row-active" if is_selected else ""
+        st.markdown(f'<div class="item-row-btn {active_cls}" data-name="{name.lower()}">', unsafe_allow_html=True)
 
-            # Invisible full-row button
-            if st.button("select", key=f"item_row_{name}", use_container_width=True):
-                if is_selected:
-                    st.session_state.items_selected = None
-                else:
-                    st.session_state.items_selected = name
-                st.rerun()
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # Visual overlay pulled up over the button
-            active_text_cls = "item-row-active-text" if is_selected else ""
-            st.markdown(f"""
-            <div class="item-row-visual {active_text_cls}">
-                <img src="{img_url}" width="36" height="36">
-                <span class="item-row-name">{name}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Accordion: show recipe card inline below selected row
+        # Invisible full-row button
+        if st.button("select", key=f"item_row_{name}", use_container_width=True):
             if is_selected:
-                result = get_item_recipe(name, data)
-                if result:
-                    st.markdown(recipe_card(result), unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="status-box">
-                        &gt; No craftable recipe found for {name} &lt;
-                    </div>
-                    """, unsafe_allow_html=True)
+                st.session_state.items_selected = None
+            else:
+                st.session_state.items_selected = name
+            st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Visual overlay pulled up over the button
+        active_text_cls = "item-row-active-text" if is_selected else ""
+        st.markdown(f"""
+        <div class="item-row-visual {active_text_cls}">
+            <img src="{img_url}" width="36" height="36">
+            <span class="item-row-name">{name}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Accordion: show recipe card inline below selected row
+        if is_selected:
+            result = get_item_recipe(name, data)
+            if result:
+                st.markdown(recipe_card(result), unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="status-box">
+                    &gt; No craftable recipe found for {name} &lt;
+                </div>
+                """, unsafe_allow_html=True)
+
+    # "NO ITEMS FOUND" message — hidden by default, shown by JS when all rows are filtered out
+    st.markdown("""
+    <div id="items-no-results" style="display:none;font-family:'Share Tech Mono',monospace;
+         color:#555;font-size:0.75rem;text-align:center;letter-spacing:0.2em;padding:2rem 0;">
+        NO ITEMS FOUND
+    </div>
+    """, unsafe_allow_html=True)
+
+    # JS: wire oninput on #items-search to filter item rows client-side
+    st.markdown("""
+    <script>
+    (function() {
+        function initSearch() {
+            var input = document.getElementById('items-search');
+            var noResults = document.getElementById('items-no-results');
+            if (!input || !noResults) {
+                setTimeout(initSearch, 100);
+                return;
+            }
+            input.addEventListener('input', function() {
+                var q = this.value.toLowerCase().trim();
+                var rows = document.querySelectorAll('div.item-row-btn[data-name]');
+                var visible = 0;
+                rows.forEach(function(row) {
+                    var name = row.getAttribute('data-name');
+                    var match = !q || name.indexOf(q) !== -1;
+                    // The row wrapper is inside a Streamlit markdown container — hide that
+                    var container = row.parentElement;
+                    container.style.display = match ? '' : 'none';
+                    // Walk forward through siblings to find the visual overlay container
+                    // (there are 1-2 Streamlit containers between them for the button)
+                    var sib = container.nextElementSibling;
+                    for (var i = 0; i < 4 && sib; i++) {
+                        var visual = sib.querySelector('.item-row-visual');
+                        if (visual) {
+                            sib.style.display = match ? '' : 'none';
+                            break;
+                        }
+                        sib = sib.nextElementSibling;
+                    }
+                    if (match) visible++;
+                });
+                noResults.style.display = (visible === 0) ? '' : 'none';
+            });
+        }
+        initSearch();
+    })();
+    </script>
+    """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

@@ -110,28 +110,39 @@ st.markdown("""
 
     /* Main container — tight top padding */
     .main .block-container {
-        padding-top: 0.5rem;
+        padding-top: 0.2rem;
         padding-bottom: 2rem;
         background-color: #000000;
     }
 
-    /* Logo container — compact */
+    /* Logo container — compact horizontal layout */
     .logo-container {
-        text-align: center;
-        padding: 0.5rem 0 0.3rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 0.2rem 0 0.1rem 0;
     }
     .logo-svg {
+        flex-shrink: 0;
         filter: drop-shadow(0 0 25px #ffffff) drop-shadow(0 0 50px #cccccc) drop-shadow(0 0 80px #888888);
-        animation: pulse-glow 2.5s ease-in-out infinite;
+        animation: pulse-glow 2.5s ease-in-out infinite, slow-spin 60s linear infinite;
     }
     @keyframes pulse-glow {
         0%, 100% { filter: drop-shadow(0 0 20px #cccccc) drop-shadow(0 0 50px #aaaaaa) drop-shadow(0 0 80px #666666); }
         50%       { filter: drop-shadow(0 0 40px #ffffff) drop-shadow(0 0 80px #cccccc) drop-shadow(0 0 120px #999999); }
     }
+    @keyframes slow-spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+    .logo-text {
+        text-align: left;
+    }
     .logo-title {
         font-family: 'Orbitron', monospace;
         font-weight: 900;
-        font-size: 2.2rem;
+        font-size: 1.4rem;
         color: #ffffff;
         letter-spacing: 0.35em;
         text-shadow:
@@ -139,17 +150,17 @@ st.markdown("""
             0 0 30px #ffffff,
             0 0 60px #cccccc,
             0 0 100px #888888;
-        margin: 0.3rem 0 0.1rem 0;
+        margin: 0;
         line-height: 1;
     }
     .logo-subtitle {
         font-family: 'Share Tech Mono', monospace;
-        font-size: 0.85rem;
+        font-size: 0.7rem;
         color: #aaaaaa;
         letter-spacing: 0.5em;
         text-transform: uppercase;
         text-shadow: 0 0 8px #aaaaaa;
-        margin-bottom: 0;
+        margin: 0.15rem 0 0 0;
     }
 
     /* Divider */
@@ -157,7 +168,7 @@ st.markdown("""
         border: none;
         height: 2px;
         background: linear-gradient(90deg, transparent, #ffffff, #cccccc, #ffffff, transparent);
-        margin: 0.6rem auto;
+        margin: 0.3rem auto;
         max-width: 600px;
         box-shadow: 0 0 12px #ffffff, 0 0 30px #cccccc88;
     }
@@ -380,7 +391,7 @@ st.markdown("""
 # --- LOGO ---
 st.markdown("""
 <div class="logo-container">
-    <svg class="logo-svg" width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <svg class="logo-svg" width="48" height="48" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
         <!-- Outer hexagon -->
         <polygon points="60,4 110,32 110,88 60,116 10,88 10,32"
                  fill="none" stroke="#ffffff" stroke-width="3"/>
@@ -411,8 +422,10 @@ st.markdown("""
         <circle cx="16" cy="85" r="3" fill="#ffffff"/>
         <circle cx="16" cy="35" r="3" fill="#ffffff"/>
     </svg>
-    <div class="logo-title">SATISFACTORY</div>
-    <div class="logo-subtitle">Control Terminal v1.0</div>
+    <div class="logo-text">
+        <div class="logo-title">SATISFACTORY</div>
+        <div class="logo-subtitle">Control Terminal v1.0</div>
+    </div>
 </div>
 <hr class="hacker-divider">
 """, unsafe_allow_html=True)
@@ -482,6 +495,10 @@ with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
+    # Reserve a placeholder for the recipe card ABOVE the grid.
+    # We render into it after the grid returns its selection.
+    recipe_placeholder = st.empty()
+
     # Build DataFrame from item list
     all_items = list_items(data)
     df_items = pd.DataFrame([
@@ -545,6 +562,47 @@ with tab_items:
         use_checkbox=False,
     )
 
+    # JS callback: inject a "clear" button into the icon column's floating filter area,
+    # and deselect rows when the filter changes (so the old recipe card disappears)
+    on_ready_js = JsCode("""
+    function(params) {
+        // Deselect all rows whenever the filter model changes (user types new search)
+        params.api.addEventListener('filterChanged', function() {
+            params.api.deselectAll();
+        });
+
+        setTimeout(function() {
+            var wrapper = params.api.gridOptionsService
+                ? params.api.gridOptionsService.eGridDiv
+                : document.querySelector('.ag-root-wrapper');
+            if (!wrapper) wrapper = document.querySelector('.ag-root-wrapper');
+            var firstFilter = wrapper.querySelector('.ag-floating-filter');
+            if (firstFilter) {
+                firstFilter.style.visibility = 'visible';
+                firstFilter.innerHTML = '';
+                firstFilter.style.display = 'flex';
+                firstFilter.style.alignItems = 'center';
+                firstFilter.style.justifyContent = 'center';
+                var btn = document.createElement('button');
+                btn.innerText = 'clear';
+                btn.style.cssText = 'background:none;border:1px solid #333;border-radius:4px;color:#555;font-family:Share Tech Mono,monospace;font-size:0.65rem;letter-spacing:0.08em;cursor:pointer;padding:2px 8px;transition:color 0.15s,border-color 0.15s;line-height:1.4;';
+                btn.onmouseover = function() { btn.style.color='#ccc'; btn.style.borderColor='#666'; };
+                btn.onmouseout  = function() { btn.style.color='#555'; btn.style.borderColor='#333'; };
+                btn.onclick = function() {
+                    params.api.setFilterModel(null);
+                    // Also clear the floating filter input text
+                    var input = wrapper.querySelector('.ag-floating-filter-input input');
+                    if (input) {
+                        input.value = '';
+                        input.dispatchEvent(new Event('input', {bubbles: true}));
+                    }
+                };
+                firstFilter.appendChild(btn);
+            }
+        }, 200);
+    }
+    """)
+
     # Grid-level options
     gb.configure_grid_options(
         rowHeight=52,
@@ -554,6 +612,7 @@ with tab_items:
         suppressCellFocus=True,
         suppressRowDeselection=False,
         domLayout="normal",
+        onFirstDataRendered=on_ready_js,
     )
 
     grid_options = gb.build()
@@ -645,7 +704,7 @@ with tab_items:
         custom_css=aggrid_css,
     )
 
-    # --- Handle row selection → show recipe card ---
+    # --- Handle row selection → show recipe card above the grid ---
     selected_rows = grid_response.get("selected_rows", None)
     selected_name = None
 
@@ -657,25 +716,26 @@ with tab_items:
         elif isinstance(selected_rows, list) and len(selected_rows) > 0:
             selected_name = selected_rows[0]["name"]
 
+    # Render recipe card into the placeholder ABOVE the grid
     if selected_name:
-        st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
-        result = get_item_recipe(selected_name, data)
-        if result:
-            st.markdown(f"""
-            <div style="text-align:center;margin-bottom:4px;">
-                <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
-                             color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
-                             text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
-                &gt;&gt; {selected_name} &lt;&lt;</span>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(recipe_card(result), unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="status-box">
-                &gt; No craftable recipe found for {selected_name} &lt;
-            </div>
-            """, unsafe_allow_html=True)
+        with recipe_placeholder.container():
+            result = get_item_recipe(selected_name, data)
+            if result:
+                st.markdown(f"""
+                <div style="text-align:center;margin-bottom:4px;">
+                    <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+                                 color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
+                                 text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
+                    &gt;&gt; {selected_name} &lt;&lt;</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(recipe_card(result), unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="status-box">
+                    &gt; No craftable recipe found for {selected_name} &lt;
+                </div>
+                """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

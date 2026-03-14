@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ultra-satisfactory"
+dynamic = ["version"]
+description = "Satisfactory companion app"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "Luke Davis", email = "luke@example.com"}]
+keywords = ['nbdev']
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/lukedavisbbd/ultra-satisfactory"
+Documentation = "https://lukedavisbbd.github.io/ultra-satisfactory/"
+
+[project.entry-points.nbdev]
+ultra_satisfactory = "ultra_satisfactory._modidx:d"
+
+[tool.setuptools.dynamic]
+version = {attr = "ultra_satisfactory.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["ultra_satisfactory"]
+
+[tool.nbdev]

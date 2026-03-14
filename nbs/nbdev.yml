@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "ultra-satisfactory"
+  site-url: "https://lukedavisbbd.github.io/ultra-satisfactory"
+  description: "Satisfactory companion app"
+  repo-branch: main
+  repo-url: "https://github.com/lukedavisbbd/ultra-satisfactory"

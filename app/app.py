@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ultra_satisfactory.data import load_data, wiki_image_url, get_item_recipe
+from ultra_satisfactory.data import load_data, wiki_image_url, get_item_recipe, list_items
 
 st.set_page_config(
     page_title="SATISFACTORY CONTROL",
@@ -361,6 +361,84 @@ st.markdown("""
         margin-top: 2rem;
         text-shadow: 0 0 4px #66666644;
     }
+
+    /* ---- ITEMS TAB ---- */
+
+    /* Sticky search container */
+    .items-search-wrap {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #000000;
+        padding: 0.5rem 0 0.75rem 0;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Item list rows — the invisible button itself */
+    div.item-row-btn > div.stButton > button {
+        width: 100% !important;
+        height: 52px !important;
+        min-height: 52px !important;
+        font-size: 0 !important;
+        color: transparent !important;
+        background: transparent !important;
+        border: 1px solid #222222 !important;
+        border-radius: 6px !important;
+        cursor: pointer;
+        padding: 0 !important;
+        margin: 0 !important;
+        transition: border-color 0.12s ease, background 0.12s ease;
+    }
+    div.item-row-btn > div.stButton > button p {
+        font-size: 0 !important;
+        line-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    div.item-row-btn > div.stButton > button:hover {
+        background: rgba(255,255,255,0.04) !important;
+        border-color: #444444 !important;
+    }
+    /* Active / selected row */
+    div.item-row-btn.item-row-active > div.stButton > button {
+        background: rgba(255,255,255,0.07) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 8px rgba(255,255,255,0.15) !important;
+    }
+
+    /* Visual overlay for item rows */
+    .item-row-visual {
+        position: relative;
+        z-index: 2;
+        pointer-events: none;
+        margin-top: -56px;
+        margin-bottom: 4px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 12px;
+    }
+    .item-row-visual img {
+        border-radius: 4px;
+        border: 1px solid #333;
+        background: #111;
+        image-rendering: pixelated;
+        flex-shrink: 0;
+    }
+    .item-row-visual .item-row-name {
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.85rem;
+        color: #cccccc;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .item-row-visual.item-row-active-text .item-row-name {
+        color: #ffffff;
+        text-shadow: 0 0 8px rgba(255,255,255,0.4);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -407,6 +485,8 @@ st.markdown("""
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
+if "items_selected" not in st.session_state:
+    st.session_state.items_selected = None
 
 # --- TABS ---
 tab_objectives, tab_items, tab_buildings = st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])
@@ -468,10 +548,70 @@ with tab_objectives:
 with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
-    st.markdown("""
-    <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
-                text-align:center;letter-spacing:0.2em;">COMING IN TODO 3</div>
-    """, unsafe_allow_html=True)
+
+    # Sticky search bar wrapper
+    st.markdown('<div class="items-search-wrap">', unsafe_allow_html=True)
+    search_query = st.text_input(
+        label="Search items",
+        placeholder="Search items...",
+        key="items_search",
+        label_visibility="collapsed",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Load and filter item list
+    all_items = list_items(data)
+    if search_query:
+        q = search_query.lower()
+        filtered = [it for it in all_items if q in it["name"].lower()]
+    else:
+        filtered = all_items
+
+    if not filtered:
+        st.markdown("""
+        <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
+                    text-align:center;letter-spacing:0.2em;padding:2rem 0;">NO ITEMS FOUND</div>
+        """, unsafe_allow_html=True)
+    else:
+        for it in filtered:
+            name = it["name"]
+            img_url = it["image_url"]
+            is_selected = (st.session_state.items_selected == name)
+
+            # Wrapper div — adds active class if selected (for CSS targeting)
+            active_cls = "item-row-active" if is_selected else ""
+            st.markdown(f'<div class="item-row-btn {active_cls}">', unsafe_allow_html=True)
+
+            # Invisible full-row button
+            if st.button("select", key=f"item_row_{name}", use_container_width=True):
+                if is_selected:
+                    st.session_state.items_selected = None
+                else:
+                    st.session_state.items_selected = name
+                st.rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Visual overlay pulled up over the button
+            active_text_cls = "item-row-active-text" if is_selected else ""
+            st.markdown(f"""
+            <div class="item-row-visual {active_text_cls}">
+                <img src="{img_url}" width="36" height="36">
+                <span class="item-row-name">{name}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Accordion: show recipe card inline below selected row
+            if is_selected:
+                result = get_item_recipe(name, data)
+                if result:
+                    st.markdown(recipe_card(result), unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="status-box">
+                        &gt; No craftable recipe found for {name} &lt;
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

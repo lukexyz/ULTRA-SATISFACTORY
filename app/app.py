@@ -42,8 +42,13 @@ def recipe_card(result: dict) -> str:
         parts = []
         for e in entries:
             e_img = wiki_image_url(e['name'], 48)
+            e_name_js = e['name'].replace("'", "\\'")
             parts.append(
-                f'<div style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;">'
+                f'<div style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;'
+                f'cursor:pointer;border-radius:6px;padding:2px 4px;transition:background 0.15s;"'
+                f' onclick="window.location.href=\'?item=\'+encodeURIComponent(\'{e_name_js}\')"'
+                f' onmouseover="this.style.background=\'rgba(255,255,255,0.10)\'"'
+                f' onmouseout="this.style.background=\'none\'">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
@@ -503,9 +508,35 @@ with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
+    # --- Query param handler: clicking an ingredient/product chip sets ?item=Name ---
+    queried_item = st.query_params.get("item")
+    if queried_item:
+        st.query_params.clear()
+
     # Reserve a placeholder for the recipe card ABOVE the grid.
     # We render into it after the grid returns its selection.
     recipe_placeholder = st.empty()
+
+    # If a chip was clicked (query param), render its recipe card immediately
+    if queried_item:
+        with recipe_placeholder.container():
+            result = get_item_recipe(queried_item, data)
+            if result:
+                st.markdown(f"""
+                <div style="text-align:center;margin-bottom:4px;">
+                    <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+                                 color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
+                                 text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
+                    &gt;&gt; {queried_item} &lt;&lt;</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(recipe_card(result), unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="status-box">
+                    &gt; No craftable recipe found for {queried_item} &lt;
+                </div>
+                """, unsafe_allow_html=True)
 
     # Build DataFrame from item list
     all_items = list_items(data)
@@ -724,7 +755,7 @@ with tab_items:
         elif isinstance(selected_rows, list) and len(selected_rows) > 0:
             selected_name = selected_rows[0]["name"]
 
-    # Render recipe card into the placeholder ABOVE the grid
+    # Grid row click takes priority over chip navigation
     if selected_name:
         with recipe_placeholder.container():
             result = get_item_recipe(selected_name, data)

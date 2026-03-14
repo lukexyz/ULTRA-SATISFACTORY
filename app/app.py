@@ -44,7 +44,7 @@ def recipe_card(result: dict) -> str:
             e_img = wiki_image_url(e['name'], 48)
             e_name_encoded = e['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
-                f'<a class="recipe-chip" href="?item={e_name_encoded}" data-item="{e["name"]}">'
+                f'<a class="recipe-chip" href="?item={e_name_encoded}">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
@@ -121,6 +121,15 @@ st.markdown("""
     }
     [data-testid="stMain"] {
         background-color: #000000 !important;
+    }
+
+    /* ⚡ Fade-in on page load — masks visual jank during chip navigation reloads */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    [data-testid="stApp"] {
+        animation: fadeIn 0.3s ease-in;
     }
 
     /* Hide streamlit branding */
@@ -301,15 +310,18 @@ st.markdown("""
         text-shadow: 0 0 8px #7dd3fc, 0 0 20px #38bdf8, 0 0 40px #38bdf888 !important;
     }
 
-    /* Streamlit tab indicator line — gradient that tweens colour as it slides */
-    div[data-testid="stTabs"] [data-testid="stTabBar"] [role="presentation"] {
+    /* Streamlit tab indicator line — neon cyan matching ULTRA title */
+    div[data-testid="stTabs"] [data-testid="stTabBar"] [role="presentation"],
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+    div[data-testid="stTabs"] [data-testid="stTabBar"] > div:last-child,
+    div[data-testid="stTabs"] [role="tablist"] > div[role="presentation"] {
         display: block !important;
         height: 3px !important;
         border-radius: 2px !important;
-        background: linear-gradient(90deg, #a855f7, #c026d3, #ec4899, #818cf8, #38bdf8) !important;
-        background-attachment: fixed !important;
-        box-shadow: 0 0 8px #c026d388, 0 0 20px #c026d344 !important;
-        filter: drop-shadow(0 0 6px #ec489966) !important;
+        background: #00cfff !important;
+        background-color: #00cfff !important;
+        box-shadow: 0 0 8px #00cfff88, 0 0 20px #00cfff44 !important;
+        filter: drop-shadow(0 0 6px #00cfff66) !important;
     }
 
     /* Tab panel — no extra padding */
@@ -500,27 +512,6 @@ st.markdown("""
 </div>
 <hr class="hacker-divider">
 """, unsafe_allow_html=True)
-
-# ⚡ Inject JS event delegation for recipe chip clicks.
-# Intercepts <a class="recipe-chip"> clicks: instead of a full page reload,
-# uses pushState + popstate dispatch so Streamlit reruns in-place (no white flash).
-st.html("""
-<div style="display:none;">
-<script>
-document.addEventListener('click', function(e) {
-    var chip = e.target.closest('.recipe-chip');
-    if (!chip) return;
-    e.preventDefault();
-    var item = chip.getAttribute('data-item');
-    if (!item) return;
-    var url = new URL(window.location.href);
-    url.searchParams.set('item', item);
-    window.history.pushState({}, '', url.toString());
-    window.dispatchEvent(new PopStateEvent('popstate'));
-});
-</script>
-</div>
-""", unsafe_allow_javascript=True)
 
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:

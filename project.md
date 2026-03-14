@@ -132,12 +132,12 @@ _Rules for how the AI operates on this project. Applied every session._
 
 ━━━━━━━━━━━━━━━━━━━━━[ PHASE 2 ]━━━━━━━━━━━━━━━━━━━━━
 
-1. ⚡ ☐ **Tab navigation** — wrap app body in `st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])`; move existing Objectives content into tab 1 unchanged; `recipe_card`, `wiki_image_url`, and data loading stay at module level (shared across tabs); CSS: tab labels in Share Tech Mono, uppercase, white/gray palette, active tab glows
-2. ⚡ ☐ **`list_items()` in notebook + export** — add `list_items(data)` to `nbs/00_data.ipynb`; returns all items in `data['items']` excluding raw resources (`data['resources']`), sorted A-Z; each entry: `{"class_key", "name", "image_url"}` at 40px; run `nbdev_export()` to push to `ultra_satisfactory/data.py`
-3. ⚡ ☐ **Items tab — sticky search + accordion list** — sticky `st.text_input` search bar (stays on screen while scrolling, `position: sticky; top: 0; z-index: 100; background: #000`); list rows show 40px icon + item name using full-width invisible button with visual overlay; clicking a row expands `recipe_card` inline below it (accordion); clicking the same row again collapses it; session state key: `items_selected`
-4. ⚡ ☐ **Clickable ingredient/product chips in `recipe_card`** — each chip in `item_cell()` gets an `onclick` that sets `window.location.href = '?item=Item+Name'`; on rerun, app reads `st.query_params["item"]`, sets `items_selected` + switches to Items tab + opens recipe card immediately; hover: no underline, no link colour, just `background: rgba(255,255,255,0.1)` flash with `border-radius: 4px`
-5. ⚡ ☐ **Buildings tab stub** — centred placeholder in Share Tech Mono: `// BUILDINGS DATABASE //` + `COMING SOON`; no logic
-6. ⚡ ☐ **Update `project.md`** — mark Phase 2 todos complete as work is done; add discoveries
+1. ☐ **Tab navigation** — wrap app body in `st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])`; move existing Objectives content into tab 1 unchanged; `recipe_card`, `wiki_image_url`, and data loading stay at module level (shared across tabs); CSS: tab labels in Share Tech Mono, uppercase, white/gray palette, active tab glows
+2. ☐ **`list_items()` in notebook + export** — add `list_items(data)` to `nbs/00_data.ipynb`; returns all items in `data['items']` excluding raw resources (`data['resources']`), sorted A-Z; each entry: `{"class_key", "name", "image_url"}` at 40px; run `nbdev_export()` to push to `ultra_satisfactory/data.py`
+3. ☐ **Items tab — sticky search + accordion list** — sticky `st.text_input` search bar (stays on screen while scrolling, `position: sticky; top: 0; z-index: 100; background: #000`); list rows show 40px icon + item name using full-width invisible button with visual overlay; clicking a row expands `recipe_card` inline below it (accordion); clicking the same row again collapses it; session state key: `items_selected`
+4. ☐ **Clickable ingredient/product chips in `recipe_card`** — each chip in `item_cell()` gets an `onclick` that sets `window.location.href = '?item=Item+Name'`; on rerun, app reads `st.query_params["item"]`, sets `items_selected` + switches to Items tab + opens recipe card immediately; hover: no underline, no link colour, just `background: rgba(255,255,255,0.1)` flash with `border-radius: 4px`
+5. ☐ **Buildings tab stub** — centred placeholder in Share Tech Mono: `// BUILDINGS DATABASE //` + `COMING SOON`; no logic
+6. ☐ **Update `project.md`** — mark Phase 2 todos complete as work is done; add discoveries
 
 ---
 

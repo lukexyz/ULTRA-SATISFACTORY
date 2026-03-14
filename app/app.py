@@ -28,7 +28,9 @@ OBJECTIVES = [
 
 # --- RECIPE CARD FUNCTION (shared across tabs) ---
 def recipe_card(result: dict) -> str:
-    """Return an HTML crafting card styled like the Satisfactory wiki (gold/blue theme)."""
+    """Return an HTML crafting card styled like the Satisfactory wiki (gold/blue theme).
+    Ingredient and product chips are clickable — clicking navigates to that item via query param.
+    """
     name = result['name']
     img = result['image_url']
     machine = result['machine']
@@ -40,8 +42,16 @@ def recipe_card(result: dict) -> str:
         parts = []
         for e in entries:
             e_img = wiki_image_url(e['name'], 48)
+            # Each chip is clickable: sets ?item=Name which the Items tab picks up on rerun.
+            # pointer-events: all so clicks register through the card.
+            nav_js = f"window.location.href='?item='+encodeURIComponent('{e['name']}');"
             parts.append(
-                f'<div style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;">'
+                f'<div onclick="{nav_js}" '
+                f'style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;'
+                f'cursor:pointer;border-radius:6px;padding:3px 5px;'
+                f'transition:background 0.15s ease;" '
+                f'onmouseover="this.style.background=\'rgba(255,255,255,0.10)\'" '
+                f'onmouseout="this.style.background=\'transparent\'">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
@@ -227,7 +237,7 @@ st.markdown("""
         padding-top: 0 !important;
     }
 
-    /* --- OBJECTIVE BUTTON CARDS --- */
+    /* ---- OBJECTIVE BUTTON CARDS ---- */
 
     /* The actual st.button — tall, visual content hidden */
     div.stButton > button {
@@ -362,72 +372,38 @@ st.markdown("""
         text-shadow: 0 0 4px #66666644;
     }
 
-    /* ---- ITEMS TAB ---- */
+    /* ---- ITEMS TAB — HTML TABLE ---- */
 
-    /* Sticky search container */
-    .items-search-wrap {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: #000000;
-        padding: 0.5rem 0 0.75rem 0;
-        margin-bottom: 0.25rem;
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Share Tech Mono', monospace;
+        margin-top: 0.5rem;
     }
-
-    /* Item list rows — the invisible button itself */
-    div.item-row-btn > div.stButton > button {
-        width: 100% !important;
-        height: 52px !important;
-        min-height: 52px !important;
-        font-size: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        border: 1px solid #222222 !important;
-        border-radius: 6px !important;
+    .items-table tr {
+        border-bottom: 1px solid #1a1a1a;
         cursor: pointer;
-        padding: 0 !important;
-        margin: 0 !important;
-        transition: border-color 0.12s ease, background 0.12s ease;
+        transition: background 0.1s ease;
     }
-    div.item-row-btn > div.stButton > button p {
-        font-size: 0 !important;
-        line-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    .items-table tr:hover {
+        background: rgba(255,255,255,0.05) !important;
     }
-    div.item-row-btn > div.stButton > button:hover {
-        background: rgba(255,255,255,0.04) !important;
-        border-color: #444444 !important;
+    .items-table td {
+        padding: 6px 10px;
+        vertical-align: middle;
     }
-    /* Active / selected row */
-    div.item-row-btn.item-row-active > div.stButton > button {
-        background: rgba(255,255,255,0.07) !important;
-        border-color: #ffffff !important;
-        box-shadow: 0 0 8px rgba(255,255,255,0.15) !important;
+    .items-table td.item-icon {
+        width: 44px;
+        padding-right: 4px;
     }
-
-    /* Visual overlay for item rows */
-    .item-row-visual {
-        position: relative;
-        z-index: 2;
-        pointer-events: none;
-        margin-top: -56px;
-        margin-bottom: 4px;
-        height: 52px;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        gap: 12px;
-    }
-    .item-row-visual img {
+    .items-table td.item-icon img {
+        display: block;
         border-radius: 4px;
-        border: 1px solid #333;
+        border: 1px solid #222;
         background: #111;
         image-rendering: pixelated;
-        flex-shrink: 0;
     }
-    .item-row-visual .item-row-name {
-        font-family: 'Share Tech Mono', monospace;
+    .items-table td.item-name {
         font-size: 0.85rem;
         color: #cccccc;
         letter-spacing: 0.05em;
@@ -435,9 +411,19 @@ st.markdown("""
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .item-row-visual.item-row-active-text .item-row-name {
-        color: #ffffff;
-        text-shadow: 0 0 8px rgba(255,255,255,0.4);
+
+    /* Streamlit text_input — dark theme */
+    div[data-testid="stTextInput"] input {
+        background: #0a0a0a !important;
+        color: #cccccc !important;
+        border: 1px solid #333 !important;
+        border-radius: 6px !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        font-size: 0.85rem !important;
+    }
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #666 !important;
+        box-shadow: 0 0 6px rgba(255,255,255,0.1) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -487,6 +473,18 @@ if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
 if "items_selected" not in st.session_state:
     st.session_state.items_selected = None
+
+# --- QUERY PARAM HANDLER ---
+# Clicking a chip or item row sets ?item=Name in the URL, causing a rerun.
+# We read it here (before tabs render) so items_selected is set before the Items tab draws.
+# __clear__ is a special sentinel that means "deselect current item".
+_qp_item = st.query_params.get("item")
+if _qp_item == "__clear__":
+    st.session_state.items_selected = None
+    st.query_params.clear()
+elif _qp_item:
+    st.session_state.items_selected = _qp_item
+    st.query_params.clear()
 
 # --- TABS ---
 tab_objectives, tab_items, tab_buildings = st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])
@@ -549,15 +547,13 @@ with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
-    # Sticky search bar wrapper
-    st.markdown('<div class="items-search-wrap">', unsafe_allow_html=True)
+    # Search bar — plain st.text_input, no sticky wrapper
     search_query = st.text_input(
         label="Search items",
         placeholder="Search items...",
         key="items_search",
         label_visibility="collapsed",
     )
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Load and filter item list
     all_items = list_items(data)
@@ -573,45 +569,71 @@ with tab_items:
                     text-align:center;letter-spacing:0.2em;padding:2rem 0;">NO ITEMS FOUND</div>
         """, unsafe_allow_html=True)
     else:
+        # Build a single HTML table — one row per item.
+        # Each <tr> has an onclick that sets the ?item= query param, triggering a rerun.
+        # The active row is highlighted server-side by checking items_selected.
+        selected = st.session_state.items_selected
+        rows = []
         for it in filtered:
             name = it["name"]
             img_url = it["image_url"]
-            is_selected = (st.session_state.items_selected == name)
+            is_active = (selected == name)
 
-            # Wrapper div — adds active class if selected (for CSS targeting)
-            active_cls = "item-row-active" if is_selected else ""
-            st.markdown(f'<div class="item-row-btn {active_cls}">', unsafe_allow_html=True)
+            # Active row: white left border accent + subtle background
+            row_style = (
+                'background:rgba(255,255,255,0.07);border-left:3px solid #ffffff;'
+                if is_active else
+                'border-left:3px solid transparent;'
+            )
+            name_style = (
+                'color:#ffffff;text-shadow:0 0 8px rgba(255,255,255,0.4);'
+                if is_active else
+                'color:#cccccc;'
+            )
 
-            # Invisible full-row button
-            if st.button("select", key=f"item_row_{name}", use_container_width=True):
-                if is_selected:
-                    st.session_state.items_selected = None
-                else:
-                    st.session_state.items_selected = name
-                st.rerun()
+            # onclick: if already selected, deselect (navigate to ?item=__clear__)
+            # We use a special value to signal deselection
+            if is_active:
+                onclick = "window.location.href='?item=__clear__';"
+            else:
+                # encodeURIComponent for safety; names are ASCII but be safe
+                safe_name = name.replace("'", "\\'")
+                onclick = f"window.location.href='?item={safe_name}';"
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            rows.append(
+                f'<tr onclick="{onclick}" style="{row_style}">'
+                f'<td class="item-icon"><img src="{img_url}" width="32" height="32"></td>'
+                f'<td class="item-name" style="{name_style}">{name}</td>'
+                f'</tr>'
+            )
 
-            # Visual overlay pulled up over the button
-            active_text_cls = "item-row-active-text" if is_selected else ""
-            st.markdown(f"""
-            <div class="item-row-visual {active_text_cls}">
-                <img src="{img_url}" width="36" height="36">
-                <span class="item-row-name">{name}</span>
-            </div>
-            """, unsafe_allow_html=True)
+        table_html = (
+            '<table class="items-table">'
+            + ''.join(rows)
+            + '</table>'
+        )
+        st.markdown(table_html, unsafe_allow_html=True)
 
-            # Accordion: show recipe card inline below selected row
-            if is_selected:
-                result = get_item_recipe(name, data)
-                if result:
-                    st.markdown(recipe_card(result), unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="status-box">
-                        &gt; No craftable recipe found for {name} &lt;
-                    </div>
-                    """, unsafe_allow_html=True)
+        # Recipe card shown below the full table when an item is selected
+        if selected:
+            st.markdown('<hr class="hacker-divider" style="margin:1rem auto;">', unsafe_allow_html=True)
+            result = get_item_recipe(selected, data)
+            if result:
+                st.markdown(f"""
+                <div style="text-align:center;margin-bottom:4px;">
+                    <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+                                 color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
+                                 text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
+                    &gt;&gt; {selected} &lt;&lt;</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(recipe_card(result), unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="status-box">
+                    &gt; No craftable recipe found for {selected} &lt;
+                </div>
+                """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

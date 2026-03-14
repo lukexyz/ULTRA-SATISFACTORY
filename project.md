@@ -60,6 +60,10 @@
 - ⚡ **Wiki image URL pattern:** `https://satisfactory.wiki.gg/images/thumb/{Item_Name}.png/40px-{Item_Name}.png` where spaces become underscores. No auth required. Verified on Versatile Framework, March 2026.
 - ⚡ **Wiki license:** CC BY-NC-SA 4.0. Fine for a personal/non-commercial tool.
 - ⚡ **Asset hosting:** `data.json` is small enough to live directly in the repo under `data/`. No S3 needed for Phase 1.
+- ⚡ **Invisible button pattern abandoned:** the `st.button` + visual overlay trick (font-size:0, negative margin) breaks when global button CSS bleeds into item rows. Pure HTML `<table>` with `onclick` + `st.query_params` is the correct pattern for clickable HTML lists in Streamlit.
+- ⚡ **Query param navigation pattern:** `onclick="window.location.href='?item=Name'"` on any HTML element triggers a full page rerun; reading `st.query_params.get("item")` at the top of the script (before tabs) sets session state before widgets render. `st.query_params.clear()` removes the param without an extra rerun. Special sentinel `__clear__` used for deselection.
+- ⚡ **CSS bleed fix:** removing `st.button` from the Items tab entirely eliminates the global `div.stButton > button` CSS bleed. No scoping gymnastics required — the selector simply has no targets in that tab.
+- ⚡ **Stlite compatibility:** `st.query_params`, `st.session_state`, `st.cache_data`, `st.tabs`, `st.text_input`, `st.button` all work in stlite. `onclick` JS navigating via `window.location.href` works in stlite (runs in a real browser). `data.json` will need to be mounted via stlite `files` option at deploy time — not a Phase 2 concern.
 
 ---
 
@@ -134,10 +138,10 @@ _Rules for how the AI operates on this project. Applied every session._
 
 1. ☑ <span style="color: purple">**Tab navigation**</span> — `app/app.py` rewritten with `st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])`; logo + divider sit above tabs; Objectives content moved into tab 1 unchanged (button keys updated to `obj_btn_{i}`); Items + Buildings stubs added; tab CSS: Share Tech Mono, uppercase, `#555` inactive, `#ffffff` active with glow + `border-bottom: 2px solid #ffffff`
 2. ☑ <span style="color: purple">**`list_items()` in notebook + export**</span> — `list_items(data)` added to `nbs/00_data.ipynb` and exported to `ultra_satisfactory/data.py`; returns 140 craftable items sorted A-Z, each `{class_key, name, image_url}` at 40px; raw resources excluded; verified with test script
-3. ☑ <span style="color: purple">**Items tab — sticky search + accordion list**</span> — sticky `st.text_input` search bar (`position: sticky; top: 0; z-index: 100; background: #000`); list rows show 36px icon + item name via invisible button + visual overlay pattern; clicking a row expands `recipe_card` inline below it; clicking again collapses; active row highlighted with white border + text glow; session state key: `items_selected`
-4. ☐ **Clickable ingredient/product chips in `recipe_card`** — each chip in `item_cell()` gets an `onclick` that sets `window.location.href = '?item=Item+Name'`; on rerun, app reads `st.query_params["item"]`, sets `items_selected` + switches to Items tab + opens recipe card immediately; hover: no underline, no link colour, just `background: rgba(255,255,255,0.1)` flash with `border-radius: 4px`
-5. ☐ **Buildings tab stub** — centred placeholder in Share Tech Mono: `// BUILDINGS DATABASE //` + `COMING SOON`; no logic
-6. ☐ **Update `project.md`** — mark Phase 2 todos complete as work is done; add discoveries
+3. ☑ <span style="color: purple">**Items tab — HTML table + query param navigation**</span> — ⚡ rewrote Items tab on branch `phase-2-items-html-table`; abandoned invisible-button pattern entirely; single `st.markdown` HTML `<table>` with 140 rows (32px icon + name); each `<tr onclick>` sets `?item=Name` in URL triggering rerun; query param handler at top of script reads param before tabs render, sets `items_selected`, calls `st.query_params.clear()`; `__clear__` sentinel handles deselection; active row highlighted server-side (inline style on matching `<tr>`); recipe card rendered below the full table; CSS bleed from Objective button styles is gone because no `st.button` widgets exist in the Items tab
+4. ☑ <span style="color: purple">**Clickable ingredient/product chips in `recipe_card`**</span> — ⚡ each chip `<div>` in `item_cell()` gets `onclick="window.location.href='?item='+encodeURIComponent('Name')"`; hover via `onmouseover`/`onmouseout` inline handlers (`rgba(255,255,255,0.10)` flash, `border-radius: 6px`); same query param handler catches these clicks and sets `items_selected`
+5. ☑ <span style="color: purple">**Buildings tab stub**</span> — ⚡ centred placeholder in Share Tech Mono: `// BUILDINGS DATABASE //` + `COMING SOON`; no logic
+6. ☑ <span style="color: purple">**Update `project.md`**</span> — ⚡ Phase 2 todos marked complete; discoveries added
 
 ---
 

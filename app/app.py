@@ -182,6 +182,10 @@ st.markdown("""
         border-bottom: 2px solid #333333;
         gap: 0;
         margin-bottom: 1.5rem;
+        justify-content: center !important;
+    }
+    div[data-testid="stTabs"] [role="tablist"] {
+        justify-content: center !important;
     }
 
     /* Individual tab buttons */

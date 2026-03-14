@@ -5,11 +5,11 @@
 # %% auto #0
 __all__ = ['load_data', 'wiki_image_url', 'get_item_recipe']
 
-# %% ../nbs/00_data.ipynb #fc4d47c0
+# %% ../nbs/00_data.ipynb #7b488642
 import json
 from pathlib import Path
 
-# %% ../nbs/00_data.ipynb #d8b28f81
+# %% ../nbs/00_data.ipynb #2c0d3d88
 def load_data(data_path: str | Path = None) -> dict:
     """Load data.json and return the raw dict with keys: items, recipes, buildings, etc.
     
@@ -31,8 +31,8 @@ def load_data(data_path: str | Path = None) -> dict:
     with open(data_path, encoding='utf-8') as f:
         return json.load(f)
 
-# %% ../nbs/00_data.ipynb #7070e582
-def wiki_image_url(item_name: str, size: int = 40) -> str:
+# %% ../nbs/00_data.ipynb #a365fc1b
+def wiki_image_url(item_name: str, size: int = 128) -> str:
     """Return the wiki.gg thumbnail URL for an item by display name.
     
     Pattern: https://satisfactory.wiki.gg/images/thumb/{Name}.png/{size}px-{Name}.png
@@ -41,7 +41,7 @@ def wiki_image_url(item_name: str, size: int = 40) -> str:
     slug = item_name.replace(' ', '_')
     return f'https://satisfactory.wiki.gg/images/thumb/{slug}.png/{size}px-{slug}.png'
 
-# %% ../nbs/00_data.ipynb #9bb520d7
+# %% ../nbs/00_data.ipynb #2444f397
 def get_item_recipe(item_name: str, data: dict, alternate: bool = False) -> dict | None:
     """Look up an item by display name and return a clean recipe dict.
 

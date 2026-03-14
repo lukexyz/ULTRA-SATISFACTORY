@@ -1,1 +1,8 @@
 template/project.md
+template/project_jet.md
+
+# Build / cache artifacts
+_proc/
+*.egg-info/
+__pycache__/
+*.pyc

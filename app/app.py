@@ -118,7 +118,7 @@ st.markdown("""
     /* Logo container — centered vertical stack */
     .logo-container {
         text-align: center;
-        padding: 0.3rem 0 0.2rem 0;
+        padding: 0.15rem 0 0.2rem 0;
     }
     .logo-svg {
         filter: drop-shadow(0 0 25px #ffffff) drop-shadow(0 0 50px #cccccc) drop-shadow(0 0 80px #888888);
@@ -137,7 +137,7 @@ st.markdown("""
         font-weight: 900;
         font-size: 1.9rem;
         color: #ffffff;
-        letter-spacing: 0.35em;
+        letter-spacing: 0.1em;
         margin: 0.25rem 0 0.05rem 0;
         line-height: 1;
     }

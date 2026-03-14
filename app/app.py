@@ -115,16 +115,12 @@ st.markdown("""
         background-color: #000000;
     }
 
-    /* Logo container — compact horizontal layout */
+    /* Logo container — centered vertical stack */
     .logo-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-        padding: 0.2rem 0 0.1rem 0;
+        text-align: center;
+        padding: 0.3rem 0 0.2rem 0;
     }
     .logo-svg {
-        flex-shrink: 0;
         filter: drop-shadow(0 0 25px #ffffff) drop-shadow(0 0 50px #cccccc) drop-shadow(0 0 80px #888888);
         animation: pulse-glow 2.5s ease-in-out infinite, slow-spin 60s linear infinite;
     }
@@ -136,31 +132,38 @@ st.markdown("""
         from { transform: rotate(0deg); }
         to   { transform: rotate(360deg); }
     }
-    .logo-text {
-        text-align: left;
-    }
     .logo-title {
         font-family: 'Orbitron', monospace;
         font-weight: 900;
-        font-size: 1.4rem;
+        font-size: 1.9rem;
         color: #ffffff;
         letter-spacing: 0.35em;
+        margin: 0.25rem 0 0.05rem 0;
+        line-height: 1;
+    }
+    .logo-title .ultra {
+        color: #00cfff;
+        text-shadow:
+            0 0 8px #00cfff,
+            0 0 20px #00cfff,
+            0 0 45px #0099cc,
+            0 0 80px #006699;
+    }
+    .logo-title .satisfactory {
         text-shadow:
             0 0 10px #ffffff,
             0 0 30px #ffffff,
             0 0 60px #cccccc,
             0 0 100px #888888;
-        margin: 0;
-        line-height: 1;
     }
     .logo-subtitle {
         font-family: 'Share Tech Mono', monospace;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: #aaaaaa;
         letter-spacing: 0.5em;
         text-transform: uppercase;
         text-shadow: 0 0 8px #aaaaaa;
-        margin: 0.15rem 0 0 0;
+        margin: 0.1rem 0 0 0;
     }
 
     /* Divider */
@@ -391,7 +394,7 @@ st.markdown("""
 # --- LOGO ---
 st.markdown("""
 <div class="logo-container">
-    <svg class="logo-svg" width="48" height="48" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <svg class="logo-svg" width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
         <!-- Outer hexagon -->
         <polygon points="60,4 110,32 110,88 60,116 10,88 10,32"
                  fill="none" stroke="#ffffff" stroke-width="3"/>
@@ -422,10 +425,8 @@ st.markdown("""
         <circle cx="16" cy="85" r="3" fill="#ffffff"/>
         <circle cx="16" cy="35" r="3" fill="#ffffff"/>
     </svg>
-    <div class="logo-text">
-        <div class="logo-title">SATISFACTORY</div>
-        <div class="logo-subtitle">Control Terminal v1.0</div>
-    </div>
+    <div class="logo-title"><span class="ultra">ULTRA-</span><span class="satisfactory">SATISFACTORY</span></div>
+    <div class="logo-subtitle">Control Terminal v1.0</div>
 </div>
 <hr class="hacker-divider">
 """, unsafe_allow_html=True)

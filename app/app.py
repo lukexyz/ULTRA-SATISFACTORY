@@ -1,10 +1,12 @@
 import streamlit as st
+import pandas as pd
 import sys
 from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ultra_satisfactory.data import load_data, wiki_image_url, get_item_recipe, list_items
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 st.set_page_config(
     page_title="SATISFACTORY CONTROL",
@@ -366,82 +368,11 @@ st.markdown("""
         text-shadow: 0 0 4px #66666644;
     }
 
-    /* ---- ITEMS TAB ---- */
+    /* ---- ITEMS TAB (AgGrid) ---- */
 
-    /* Sticky search container */
-    .items-search-wrap {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: #000000;
-        padding: 0.5rem 0 0.75rem 0;
-        margin-bottom: 0.25rem;
-    }
-
-    /* Item list rows — the invisible button itself */
-    div.item-row-btn > div.stButton > button {
-        width: 100% !important;
-        height: 52px !important;
-        min-height: 52px !important;
-        font-size: 0 !important;
-        color: transparent !important;
-        background: transparent !important;
-        border: 1px solid #222222 !important;
-        border-radius: 6px !important;
-        cursor: pointer;
-        padding: 0 !important;
-        margin: 0 !important;
-        transition: border-color 0.12s ease, background 0.12s ease;
-    }
-    div.item-row-btn > div.stButton > button p {
-        font-size: 0 !important;
-        line-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    div.item-row-btn > div.stButton > button:hover {
-        background: rgba(255,255,255,0.04) !important;
-        border-color: #444444 !important;
-    }
-    /* Active / selected row */
-    div.item-row-btn.item-row-active > div.stButton > button {
-        background: rgba(255,255,255,0.07) !important;
-        border-color: #ffffff !important;
-        box-shadow: 0 0 8px rgba(255,255,255,0.15) !important;
-    }
-
-    /* Visual overlay for item rows */
-    .item-row-visual {
-        position: relative;
-        z-index: 2;
-        pointer-events: none;
-        margin-top: -56px;
-        margin-bottom: 4px;
-        height: 52px;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        gap: 12px;
-    }
-    .item-row-visual img {
-        border-radius: 4px;
-        border: 1px solid #333;
-        background: #111;
-        image-rendering: pixelated;
-        flex-shrink: 0;
-    }
-    .item-row-visual .item-row-name {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 0.85rem;
-        color: #cccccc;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .item-row-visual.item-row-active-text .item-row-name {
-        color: #ffffff;
-        text-shadow: 0 0 8px rgba(255,255,255,0.4);
+    /* Hide AgGrid's outer border and blend into dark bg */
+    .ag-root-wrapper {
+        border: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -489,8 +420,6 @@ st.markdown("""
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
-if "items_selected" not in st.session_state:
-    st.session_state.items_selected = None
 
 # --- TABS ---
 tab_objectives, tab_items, tab_buildings = st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])
@@ -547,75 +476,206 @@ with tab_objectives:
             """, unsafe_allow_html=True)
 
 # ================================================================
-# TAB 2 — ITEMS
+# TAB 2 — ITEMS (AgGrid with instant floating filter)
 # ================================================================
 with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
-    # Sticky search bar wrapper
-    st.markdown('<div class="items-search-wrap">', unsafe_allow_html=True)
-    search_query = st.text_input(
-        label="Search items",
-        placeholder="Search items...",
-        key="items_search",
-        label_visibility="collapsed",
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Load and filter item list
+    # Build DataFrame from item list
     all_items = list_items(data)
-    if search_query:
-        q = search_query.lower()
-        filtered = [it for it in all_items if q in it["name"].lower()]
-    else:
-        filtered = all_items
+    df_items = pd.DataFrame([
+        {"icon": it["image_url"], "name": it["name"]}
+        for it in all_items
+    ])
 
-    if not filtered:
-        st.markdown("""
-        <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
-                    text-align:center;letter-spacing:0.2em;padding:2rem 0;">NO ITEMS FOUND</div>
-        """, unsafe_allow_html=True)
-    else:
-        for it in filtered:
-            name = it["name"]
-            img_url = it["image_url"]
-            is_selected = (st.session_state.items_selected == name)
+    # --- JS cell renderer for icon column ---
+    icon_renderer = JsCode("""
+    class IconCellRenderer {
+        init(params) {
+            this.eGui = document.createElement('span');
+            this.eGui.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;';
+            if (params.value) {
+                var img = document.createElement('img');
+                img.src = params.value;
+                img.style.cssText = 'width:32px;height:32px;object-fit:contain;image-rendering:pixelated;border-radius:4px;border:1px solid #333;background:#111;';
+                this.eGui.appendChild(img);
+            }
+        }
+        getGui() { return this.eGui; }
+        refresh() { return false; }
+    }
+    """)
 
-            # Wrapper div — adds active class if selected (for CSS targeting)
-            active_cls = "item-row-active" if is_selected else ""
-            st.markdown(f'<div class="item-row-btn {active_cls}">', unsafe_allow_html=True)
+    # --- Grid options ---
+    gb = GridOptionsBuilder.from_dataframe(df_items)
 
-            # Invisible full-row button
-            if st.button("select", key=f"item_row_{name}", use_container_width=True):
-                if is_selected:
-                    st.session_state.items_selected = None
-                else:
-                    st.session_state.items_selected = name
-                st.rerun()
+    # Icon column — narrow, no filter/sort, image renderer
+    gb.configure_column(
+        field="icon",
+        header_name="",
+        cellRenderer=icon_renderer,
+        width=60,
+        maxWidth=60,
+        minWidth=60,
+        sortable=False,
+        filter=False,
+        resizable=False,
+        suppressMovable=True,
+    )
 
-            st.markdown('</div>', unsafe_allow_html=True)
+    # Name column — instant floating filter for per-keystroke search
+    gb.configure_column(
+        field="name",
+        header_name="ITEM",
+        floatingFilter=True,
+        filter="agTextColumnFilter",
+        filterParams=JsCode("""{
+            filterOptions: ['contains'],
+            defaultOption: 'contains',
+            maxNumConditions: 1,
+        }"""),
+        flex=1,
+        suppressMovable=True,
+    )
 
-            # Visual overlay pulled up over the button
-            active_text_cls = "item-row-active-text" if is_selected else ""
+    # Single-row click selection (no checkbox)
+    gb.configure_selection(
+        selection_mode="single",
+        use_checkbox=False,
+    )
+
+    # Grid-level options
+    gb.configure_grid_options(
+        rowHeight=52,
+        headerHeight=0,
+        floatingFiltersHeight=40,
+        suppressHorizontalScroll=True,
+        suppressCellFocus=True,
+        suppressRowDeselection=False,
+        domLayout="normal",
+    )
+
+    grid_options = gb.build()
+
+    # --- Custom CSS for dark grayscale theme ---
+    aggrid_css = {
+        # Overall wrapper
+        ".ag-root-wrapper": {
+            "background-color": "#000000 !important",
+            "border": "none !important",
+            "font-family": "'Share Tech Mono', monospace !important",
+        },
+        # Header row (hidden via headerHeight=0 but just in case)
+        ".ag-header": {
+            "background-color": "#000000 !important",
+            "border-bottom": "none !important",
+        },
+        # Floating filter bar (the search input row)
+        ".ag-floating-filter": {
+            "background-color": "#000000 !important",
+            "border-bottom": "1px solid #222222 !important",
+        },
+        ".ag-floating-filter-input": {
+            "background-color": "#111111 !important",
+            "color": "#cccccc !important",
+            "border": "1px solid #333333 !important",
+            "border-radius": "4px !important",
+            "font-family": "'Share Tech Mono', monospace !important",
+            "font-size": "0.85rem !important",
+        },
+        # Hide the icon column's floating filter (no filter for icon)
+        ".ag-floating-filter:first-child": {
+            "visibility": "hidden !important",
+        },
+        # Body / viewport
+        ".ag-body-viewport": {
+            "background-color": "#000000 !important",
+        },
+        # Rows
+        ".ag-row": {
+            "background-color": "#000000 !important",
+            "border-bottom": "1px solid #111111 !important",
+            "color": "#cccccc !important",
+            "font-family": "'Share Tech Mono', monospace !important",
+            "font-size": "0.85rem !important",
+            "letter-spacing": "0.05em !important",
+            "cursor": "pointer !important",
+        },
+        ".ag-row-hover": {
+            "background-color": "rgba(255,255,255,0.04) !important",
+        },
+        ".ag-row-selected": {
+            "background-color": "rgba(255,255,255,0.08) !important",
+            "color": "#ffffff !important",
+        },
+        # Cells — hide column borders
+        ".ag-cell": {
+            "border-right": "none !important",
+            "line-height": "52px !important",
+        },
+        # No rows overlay
+        ".ag-overlay-no-rows-center": {
+            "color": "#555555 !important",
+            "font-family": "'Share Tech Mono', monospace !important",
+            "font-size": "0.75rem !important",
+            "letter-spacing": "0.2em !important",
+        },
+        # Scrollbar styling
+        ".ag-body-viewport::-webkit-scrollbar": {
+            "width": "6px !important",
+        },
+        ".ag-body-viewport::-webkit-scrollbar-track": {
+            "background": "#000000 !important",
+        },
+        ".ag-body-viewport::-webkit-scrollbar-thumb": {
+            "background": "#333333 !important",
+            "border-radius": "3px !important",
+        },
+    }
+
+    # --- Render the grid ---
+    grid_response = AgGrid(
+        df_items,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        height=500,
+        allow_unsafe_jscode=True,
+        theme="alpine",
+        custom_css=aggrid_css,
+    )
+
+    # --- Handle row selection → show recipe card ---
+    selected_rows = grid_response.get("selected_rows", None)
+    selected_name = None
+
+    if selected_rows is not None:
+        # v1.x returns a DataFrame
+        if isinstance(selected_rows, pd.DataFrame) and len(selected_rows) > 0:
+            selected_name = selected_rows.iloc[0]["name"]
+        # v0.x returns a list of dicts
+        elif isinstance(selected_rows, list) and len(selected_rows) > 0:
+            selected_name = selected_rows[0]["name"]
+
+    if selected_name:
+        st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
+        result = get_item_recipe(selected_name, data)
+        if result:
             st.markdown(f"""
-            <div class="item-row-visual {active_text_cls}">
-                <img src="{img_url}" width="36" height="36">
-                <span class="item-row-name">{name}</span>
+            <div style="text-align:center;margin-bottom:4px;">
+                <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+                             color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
+                             text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
+                &gt;&gt; {selected_name} &lt;&lt;</span>
             </div>
             """, unsafe_allow_html=True)
-
-            # Accordion: show recipe card inline below selected row
-            if is_selected:
-                result = get_item_recipe(name, data)
-                if result:
-                    st.markdown(recipe_card(result), unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="status-box">
-                        &gt; No craftable recipe found for {name} &lt;
-                    </div>
-                    """, unsafe_allow_html=True)
+            st.markdown(recipe_card(result), unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="status-box">
+                &gt; No craftable recipe found for {selected_name} &lt;
+            </div>
+            """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

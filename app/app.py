@@ -26,7 +26,7 @@ OBJECTIVES = [
     {"name": "Adaptive Control Unit",  "required": 100},
 ]
 
-# --- RECIPE CARD FUNCTION ---
+# --- RECIPE CARD FUNCTION (shared across tabs) ---
 def recipe_card(result: dict) -> str:
     """Return an HTML crafting card styled like the Satisfactory wiki (gold/blue theme)."""
     name = result['name']
@@ -172,10 +172,62 @@ st.markdown("""
         margin-bottom: 1rem;
     }
 
-    /* --- OBJECTIVE BUTTON CARDS ---
-       The st.button is the real click target, sized tall.
-       The .obj-card-visual sits on top via negative margin, pointer-events:none
-       so clicks pass through to the button underneath. */
+    /* ---- TAB NAVIGATION ---- */
+
+    /* Tab bar background */
+    [data-testid="stTabs"] {
+        background: transparent;
+    }
+    div[data-testid="stTabs"] > div:first-child {
+        border-bottom: 2px solid #333333;
+        gap: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Individual tab buttons */
+    div[data-testid="stTabs"] button[data-baseweb="tab"] {
+        font-family: 'Share Tech Mono', monospace !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.3em !important;
+        text-transform: uppercase !important;
+        color: #555555 !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        padding: 0.6rem 1.4rem !important;
+        margin-bottom: -2px !important;
+        transition: color 0.15s ease, text-shadow 0.15s ease !important;
+    }
+
+    /* Tab hover */
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+        color: #cccccc !important;
+        text-shadow: 0 0 8px #cccccc88 !important;
+        background: transparent !important;
+    }
+
+    /* Active tab */
+    div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"] {
+        color: #ffffff !important;
+        border-bottom: 2px solid #ffffff !important;
+        text-shadow:
+            0 0 8px #ffffff,
+            0 0 20px #cccccc !important;
+        background: transparent !important;
+    }
+
+    /* Hide the default Streamlit tab indicator line */
+    div[data-testid="stTabs"] [data-testid="stTabBar"] [role="presentation"] {
+        display: none !important;
+    }
+
+    /* Tab panel — no extra padding */
+    div[data-testid="stTabPanel"] {
+        padding-top: 0 !important;
+    }
+
+    /* --- OBJECTIVE BUTTON CARDS --- */
 
     /* The actual st.button — tall, visual content hidden */
     div.stButton > button {
@@ -350,61 +402,87 @@ st.markdown("""
     <div class="logo-subtitle">Control Terminal v1.0</div>
 </div>
 <hr class="hacker-divider">
-<div class="section-title">// SPACE ELEVATOR &mdash; PHASE 3 //</div>
 """, unsafe_allow_html=True)
 
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
 
-# --- ITEM BUTTONS (3 columns) ---
-cols = st.columns(3, gap="medium")
+# --- TABS ---
+tab_objectives, tab_items, tab_buildings = st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])
 
-for i, obj in enumerate(OBJECTIVES):
-    with cols[i]:
-        img_url = wiki_image_url(obj["name"], 128)
+# ================================================================
+# TAB 1 — OBJECTIVES
+# ================================================================
+with tab_objectives:
+    st.markdown('<div class="section-title">// SPACE ELEVATOR &mdash; PHASE 3 //</div>',
+                unsafe_allow_html=True)
 
-        # The actual st.button — tall, text hidden via CSS
-        if st.button("select", key=f"btn_{i}", use_container_width=True):
-            if st.session_state.selected_item == obj["name"]:
-                st.session_state.selected_item = None
-            else:
-                st.session_state.selected_item = obj["name"]
+    cols = st.columns(3, gap="medium")
 
-        # Visual overlay — pulled up over the button via negative margin, clicks pass through
-        st.markdown(f"""
-        <div class="obj-card-visual">
-            <img src="{img_url}" width="96" height="96">
-            <div class="obj-name">{obj["name"]}</div>
-            <div class="obj-qty">{obj["required"]:,}</div>
-            <div class="obj-label">required</div>
-        </div>
-        """, unsafe_allow_html=True)
+    for i, obj in enumerate(OBJECTIVES):
+        with cols[i]:
+            img_url = wiki_image_url(obj["name"], 128)
 
-# --- RECIPE DISPLAY ---
-if st.session_state.selected_item:
-    st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
+            # The actual st.button — tall, text hidden via CSS
+            if st.button("select", key=f"obj_btn_{i}", use_container_width=True):
+                if st.session_state.selected_item == obj["name"]:
+                    st.session_state.selected_item = None
+                else:
+                    st.session_state.selected_item = obj["name"]
 
-    result = get_item_recipe(st.session_state.selected_item, data)
-    if result:
-        # Active item indicator
-        st.markdown(f"""
-        <div style="text-align:center;margin-bottom:4px;">
-            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
-                         color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
-                         text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
-            &gt;&gt; {st.session_state.selected_item} &lt;&lt;</span>
-        </div>
-        """, unsafe_allow_html=True)
+            # Visual overlay — pulled up over the button via negative margin
+            st.markdown(f"""
+            <div class="obj-card-visual">
+                <img src="{img_url}" width="96" height="96">
+                <div class="obj-name">{obj["name"]}</div>
+                <div class="obj-qty">{obj["required"]:,}</div>
+                <div class="obj-label">required</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        # Show the full recipe card (gold/blue theme from notebook)
-        st.markdown(recipe_card(result), unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="status-box">
-            &gt; ERROR: Recipe not found for {st.session_state.selected_item} &lt;
-        </div>
-        """, unsafe_allow_html=True)
+    # Recipe display
+    if st.session_state.selected_item:
+        st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
+        result = get_item_recipe(st.session_state.selected_item, data)
+        if result:
+            st.markdown(f"""
+            <div style="text-align:center;margin-bottom:4px;">
+                <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+                             color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
+                             text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
+                &gt;&gt; {st.session_state.selected_item} &lt;&lt;</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown(recipe_card(result), unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="status-box">
+                &gt; ERROR: Recipe not found for {st.session_state.selected_item} &lt;
+            </div>
+            """, unsafe_allow_html=True)
+
+# ================================================================
+# TAB 2 — ITEMS
+# ================================================================
+with tab_items:
+    st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
+                text-align:center;letter-spacing:0.2em;">COMING IN TODO 3</div>
+    """, unsafe_allow_html=True)
+
+# ================================================================
+# TAB 3 — BUILDINGS
+# ================================================================
+with tab_buildings:
+    st.markdown('<div class="section-title">// BUILDINGS DATABASE //</div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
+                text-align:center;letter-spacing:0.2em;">COMING SOON</div>
+    """, unsafe_allow_html=True)
 
 # --- FOOTER ---
 st.markdown("""

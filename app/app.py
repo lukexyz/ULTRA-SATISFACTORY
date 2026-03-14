@@ -42,21 +42,29 @@ def recipe_card(result: dict) -> str:
         parts = []
         for e in entries:
             e_img = wiki_image_url(e['name'], 48)
+            e_name_encoded = e['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
-                f'<div class="recipe-chip" style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;'
-                f'border-radius:6px;padding:2px 4px;">'
+                f'<a class="recipe-chip" href="?item={e_name_encoded}">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
                 f'<span style="font-size:0.82em;color:#ccc;">{e["name"]}<br>'
                 f'<span style="color:#7ec8e3;">{e["rate_per_min"]}/min</span></span>'
-                f'</div>'
+                f'</a>'
             )
         return ''.join(parts)
 
     return f'''
     <style>
         .recipe-chip {{
+            text-decoration: none;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 4px 6px;
+            border-radius: 6px;
+            padding: 2px 4px;
             cursor: pointer;
             transition: background 0.15s;
         }}
@@ -207,51 +215,90 @@ st.markdown("""
 
     /* ---- TAB NAVIGATION ---- */
 
-    /* Tab bar background */
-    [data-testid="stTabs"] {
+    div[data-testid="stTabs"] {
         background: transparent;
     }
     div[data-testid="stTabs"] > div:first-child {
-        border-bottom: 2px solid #333333;
         gap: 0;
         margin-bottom: 1.5rem;
         justify-content: center !important;
+        border-bottom: 2px solid transparent !important;
+        border-image: linear-gradient(90deg, #a855f7, #ec4899, #38bdf8) 1 !important;
+        padding-bottom: 0 !important;
     }
     div[data-testid="stTabs"] [role="tablist"] {
         justify-content: center !important;
     }
 
-    /* Individual tab buttons */
+    /* Individual tab buttons — base state */
     div[data-testid="stTabs"] button[data-baseweb="tab"] {
         font-family: 'Share Tech Mono', monospace !important;
         font-size: 0.8rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.3em !important;
         text-transform: uppercase !important;
-        color: #555555 !important;
+        color: #444444 !important;
         background: transparent !important;
-        border: none !important;
-        border-bottom: 2px solid transparent !important;
-        padding: 0.6rem 1.4rem !important;
-        margin-bottom: -2px !important;
-        transition: color 0.15s ease, text-shadow 0.15s ease !important;
+        border: 1px solid rgba(255,255,255,0.04) !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.4rem !important;
+        margin: 0 4px !important;
+        transition: all 0.2s ease !important;
+        position: relative !important;
     }
 
-    /* Tab hover */
-    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
-        color: #cccccc !important;
-        text-shadow: 0 0 8px #cccccc88 !important;
-        background: transparent !important;
+    /* ---- Per-tab colours — OBJECTIVES (purple) ---- */
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:nth-child(1):hover {
+        color: #d8b4fe !important;
+        background: rgba(168,85,247,0.10) !important;
+        border: 1px solid #a855f7 !important;
+        box-shadow: 0 0 8px #a855f755, 0 0 22px #a855f733, 0 0 45px #a855f711,
+                    inset 0 0 10px #a855f711 !important;
+        text-shadow: 0 0 10px #a855f7, 0 0 25px #a855f788 !important;
+    }
+    div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"]:nth-child(1) {
+        color: #f3e8ff !important;
+        background: rgba(168,85,247,0.18) !important;
+        border: 1px solid #c084fc !important;
+        box-shadow: 0 0 12px #a855f777, 0 0 30px #a855f744, 0 0 60px #a855f722,
+                    inset 0 0 14px #a855f722 !important;
+        text-shadow: 0 0 8px #c084fc, 0 0 20px #a855f7, 0 0 40px #a855f788 !important;
     }
 
-    /* Active tab */
-    div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"] {
-        color: #ffffff !important;
-        border-bottom: 2px solid #ffffff !important;
-        text-shadow:
-            0 0 8px #ffffff,
-            0 0 20px #cccccc !important;
-        background: transparent !important;
+    /* ---- Per-tab colours — ITEMS (hot pink) ---- */
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:nth-child(2):hover {
+        color: #fbcfe8 !important;
+        background: rgba(236,72,153,0.10) !important;
+        border: 1px solid #ec4899 !important;
+        box-shadow: 0 0 8px #ec489955, 0 0 22px #ec489933, 0 0 45px #ec489911,
+                    inset 0 0 10px #ec489911 !important;
+        text-shadow: 0 0 10px #ec4899, 0 0 25px #ec489988 !important;
+    }
+    div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"]:nth-child(2) {
+        color: #fce7f3 !important;
+        background: rgba(236,72,153,0.18) !important;
+        border: 1px solid #f472b6 !important;
+        box-shadow: 0 0 12px #ec489977, 0 0 30px #ec489944, 0 0 60px #ec489922,
+                    inset 0 0 14px #ec489922 !important;
+        text-shadow: 0 0 8px #f472b6, 0 0 20px #ec4899, 0 0 40px #ec489988 !important;
+    }
+
+    /* ---- Per-tab colours — BUILDINGS (electric blue) ---- */
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:nth-child(3):hover {
+        color: #bae6fd !important;
+        background: rgba(56,189,248,0.10) !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 0 8px #38bdf855, 0 0 22px #38bdf833, 0 0 45px #38bdf811,
+                    inset 0 0 10px #38bdf811 !important;
+        text-shadow: 0 0 10px #38bdf8, 0 0 25px #38bdf888 !important;
+    }
+    div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"]:nth-child(3) {
+        color: #e0f2fe !important;
+        background: rgba(56,189,248,0.18) !important;
+        border: 1px solid #7dd3fc !important;
+        box-shadow: 0 0 12px #38bdf877, 0 0 30px #38bdf844, 0 0 60px #38bdf822,
+                    inset 0 0 14px #38bdf822 !important;
+        text-shadow: 0 0 8px #7dd3fc, 0 0 20px #38bdf8, 0 0 40px #38bdf888 !important;
     }
 
     /* Hide the default Streamlit tab indicator line */
@@ -451,9 +498,21 @@ st.markdown("""
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
     st.session_state.selected_item = None
+if "chip_item" not in st.session_state:
+    st.session_state.chip_item = None
+
+# ⚡ Query param handler: clicking a recipe chip sets ?item=Name
+# Must run BEFORE st.tabs() so we can set the default tab to ITEMS
+_queried_item = st.query_params.get("item")
+if _queried_item:
+    st.session_state.chip_item = _queried_item
+    st.query_params.clear()
 
 # --- TABS ---
-tab_objectives, tab_items, tab_buildings = st.tabs(["OBJECTIVES", "ITEMS", "BUILDINGS"])
+_default_tab = "ITEMS" if _queried_item else None
+tab_objectives, tab_items, tab_buildings = st.tabs(
+    ["OBJECTIVES", "ITEMS", "BUILDINGS"], default=_default_tab
+)
 
 # ================================================================
 # TAB 1 — OBJECTIVES
@@ -513,35 +572,8 @@ with tab_items:
     st.markdown('<div class="section-title">// ITEM DATABASE //</div>',
                 unsafe_allow_html=True)
 
-    # --- Query param handler: clicking an ingredient/product chip sets ?item=Name ---
-    queried_item = st.query_params.get("item")
-    if queried_item:
-        st.query_params.clear()
-
     # Reserve a placeholder for the recipe card ABOVE the grid.
-    # We render into it after the grid returns its selection.
     recipe_placeholder = st.empty()
-
-    # If a chip was clicked (query param), render its recipe card immediately
-    if queried_item:
-        with recipe_placeholder.container():
-            result = get_item_recipe(queried_item, data)
-            if result:
-                st.markdown(f"""
-                <div style="text-align:center;margin-bottom:4px;">
-                    <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
-                                 color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
-                                 text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
-                    &gt;&gt; {queried_item} &lt;&lt;</span>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown(recipe_card(result), unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="status-box">
-                    &gt; No craftable recipe found for {queried_item} &lt;
-                </div>
-                """, unsafe_allow_html=True)
 
     # Build DataFrame from item list
     all_items = list_items(data)
@@ -748,7 +780,8 @@ with tab_items:
         custom_css=aggrid_css,
     )
 
-    # --- Handle row selection → show recipe card above the grid ---
+    # --- Determine which item to display in the recipe card ---
+    # Priority: grid row click > chip click (session state)
     selected_rows = grid_response.get("selected_rows", None)
     selected_name = None
 
@@ -760,24 +793,33 @@ with tab_items:
         elif isinstance(selected_rows, list) and len(selected_rows) > 0:
             selected_name = selected_rows[0]["name"]
 
-    # Grid row click takes priority over chip navigation
+    # Decide what to display: grid selection clears chip state; chip persists otherwise
     if selected_name:
+        display_item = selected_name
+        st.session_state.chip_item = None  # grid click overrides chip
+    elif st.session_state.chip_item:
+        display_item = st.session_state.chip_item
+    else:
+        display_item = None
+
+    # Render the recipe card into the placeholder above the grid
+    if display_item:
         with recipe_placeholder.container():
-            result = get_item_recipe(selected_name, data)
+            result = get_item_recipe(display_item, data)
             if result:
                 st.markdown(f"""
                 <div style="text-align:center;margin-bottom:4px;">
                     <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
                                  color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
                                  text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
-                    &gt;&gt; {selected_name} &lt;&lt;</span>
+                    &gt;&gt; {display_item} &lt;&lt;</span>
                 </div>
                 """, unsafe_allow_html=True)
                 st.markdown(recipe_card(result), unsafe_allow_html=True)
             else:
                 st.markdown(f"""
                 <div class="status-box">
-                    &gt; No craftable recipe found for {selected_name} &lt;
+                    &gt; No craftable recipe found for {display_item} &lt;
                 </div>
                 """, unsafe_allow_html=True)
 

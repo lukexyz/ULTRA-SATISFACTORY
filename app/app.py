@@ -42,13 +42,9 @@ def recipe_card(result: dict) -> str:
         parts = []
         for e in entries:
             e_img = wiki_image_url(e['name'], 48)
-            e_name_js = e['name'].replace("'", "\\'")
             parts.append(
-                f'<div style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;'
-                f'cursor:pointer;border-radius:6px;padding:2px 4px;transition:background 0.15s;"'
-                f' onclick="window.location.href=\'?item=\'+encodeURIComponent(\'{e_name_js}\')"'
-                f' onmouseover="this.style.background=\'rgba(255,255,255,0.10)\'"'
-                f' onmouseout="this.style.background=\'none\'">'
+                f'<div class="recipe-chip" style="display:inline-flex;align-items:center;gap:4px;margin:4px 6px;'
+                f'border-radius:6px;padding:2px 4px;">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
@@ -59,6 +55,15 @@ def recipe_card(result: dict) -> str:
         return ''.join(parts)
 
     return f'''
+    <style>
+        .recipe-chip {{
+            cursor: pointer;
+            transition: background 0.15s;
+        }}
+        .recipe-chip:hover {{
+            background: rgba(255,255,255,0.10);
+        }}
+    </style>
     <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #e8d44d;
                 border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
                 color:#eee;overflow:hidden;max-width:820px;

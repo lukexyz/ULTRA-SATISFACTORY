@@ -108,11 +108,18 @@ st.markdown("""
     /* Hide streamlit branding */
     #MainMenu, footer, header { visibility: hidden; }
 
-    /* Main container — tight top padding */
+    /* Main container — zero top padding */
     .main .block-container {
-        padding-top: 0.2rem;
+        padding-top: 0.15rem !important;
         padding-bottom: 2rem;
         background-color: #000000;
+    }
+    /* Kill Streamlit's internal top spacing */
+    [data-testid="stMain"] > div:first-child {
+        padding-top: 0 !important;
+    }
+    section[data-testid="stMain"] {
+        padding-top: 0 !important;
     }
 
     /* Logo container — centered vertical stack */
@@ -425,7 +432,7 @@ st.markdown("""
         <circle cx="16" cy="85" r="3" fill="#ffffff"/>
         <circle cx="16" cy="35" r="3" fill="#ffffff"/>
     </svg>
-    <div class="logo-title"><span class="ultra">ULTRA-</span><span class="satisfactory">SATISFACTORY</span></div>
+    <div class="logo-title"><span class="ultra">ULTRA</span><span class="satisfactory">SATISFACTORY</span></div>
     <div class="logo-subtitle">Control Terminal v1.0</div>
 </div>
 <hr class="hacker-divider">

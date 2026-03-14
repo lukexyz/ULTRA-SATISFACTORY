@@ -33,7 +33,7 @@
 
 - **Game:** *Satisfactory* — a first-person open-world factory builder. Players unlock tiers of buildings and items progressively. Recipes have inputs, outputs, machines, and rates. The complexity escalates fast.
 - **Data source:** The [Satisfactory Wiki](https://satisfactory.wiki.gg) and/or community-maintained JSON datasets (e.g. `satisfactory-calculator` data exports). Data is static — game patches occasionally change recipes but the core dataset is stable.
-- **Stack:** Python + Streamlit. Single `app/app.py` file. All styling inline via `st.markdown`. Fonts: Orbitron + Share Tech Mono (Google Fonts). No database — data loaded from flat files (JSON or CSV) at startup.
+- **Stack:** Python + Streamlit + streamlit-aggrid. Single `app/app.py` file. All styling inline via `st.markdown` + AgGrid `custom_css`. Fonts: Orbitron + Share Tech Mono (Google Fonts). No database — data loaded from flat files (JSON) at startup.
 - **Display:** Grayscale DC display. High-contrast black/white/gray palette only. All color decisions assume zero color rendering. (Full colour option is a future phase.)
 - **Deployment (Phase 1):** Local machine, runs alongside the game. Launched manually via `cmd`. Auto-reloads on file save (`--server.runOnSave=true`).
 - **Deployment (Phase N):** [Stlite](https://github.com/whitphx/stlite) — runs Streamlit entirely in the browser via WebAssembly (Pyodide). No server, no backend. Deployable as static files to GitHub Pages. Goal is a zero-install companion accessible from any device, including in-game overlay via browser.
@@ -64,6 +64,9 @@
 - ⚡ **Query param navigation pattern:** `onclick="window.location.href='?item=Name'"` on any HTML element triggers a full page rerun; reading `st.query_params.get("item")` at the top of the script (before tabs) sets session state before widgets render. `st.query_params.clear()` removes the param without an extra rerun. Special sentinel `__clear__` used for deselection.
 - ⚡ **CSS bleed fix:** removing `st.button` from the Items tab entirely eliminates the global `div.stButton > button` CSS bleed. No scoping gymnastics required — the selector simply has no targets in that tab.
 - ⚡ **Stlite compatibility:** `st.query_params`, `st.session_state`, `st.cache_data`, `st.tabs`, `st.text_input`, `st.button` all work in stlite. `onclick` JS navigating via `window.location.href` works in stlite (runs in a real browser). `data.json` will need to be mounted via stlite `files` option at deploy time — not a Phase 2 concern.
+- ⚡ **Streamlit `<script>` tags stripped:** `st.markdown(..., unsafe_allow_html=True)` strips `<script>` tags entirely. JS injection via `st.markdown` does not work for custom search logic. Use `st.components.v1.html()` or a proper component (e.g. AgGrid) for client-side interactivity.
+- ⚡ **`st.text_input` fires on blur/Enter only:** not per-keystroke. No debounce or real-time mode available in Streamlit 1.55.0. For instant search, must use a component with its own input (e.g. AgGrid floating filter).
+- ⚡ **AgGrid floating filter = true instant search:** `streamlit-aggrid` v1.2.1 with `floatingFilter=True` on a column renders a persistent filter input inside the grid component. Filtering is entirely client-side, per-keystroke, zero Python rerun. `JsCode` class-based cell renderers work for custom icon columns. Requires `allow_unsafe_jscode=True`.
 
 ---
 
@@ -84,7 +87,7 @@ Set up the project scaffold (nbdev, mamba env, data), build the core item lookup
 
 ### Phase 2 — Tabs + Item Browser
 
-Add top-level tab navigation (Objectives, Items, Buildings), a fully searchable item browser with sticky search and inline accordion recipe cards, and clickable ingredient chips that navigate directly to the relevant item's recipe.
+Add top-level tab navigation (Objectives, Items, Buildings), a fully searchable item browser with instant per-keystroke filtering via AgGrid floating filter, icon + name columns, and inline recipe cards on row selection.
 
 ---
 
@@ -142,6 +145,7 @@ _Rules for how the AI operates on this project. Applied every session._
 4. ☑ <span style="color: purple">**Clickable ingredient/product chips in `recipe_card`**</span> — ⚡ each chip `<div>` in `item_cell()` gets `onclick="window.location.href='?item='+encodeURIComponent('Name')"`; hover via `onmouseover`/`onmouseout` inline handlers (`rgba(255,255,255,0.10)` flash, `border-radius: 6px`); same query param handler catches these clicks and sets `items_selected`
 5. ☑ <span style="color: purple">**Buildings tab stub**</span> — ⚡ centred placeholder in Share Tech Mono: `// BUILDINGS DATABASE //` + `COMING SOON`; no logic
 6. ☑ <span style="color: purple">**Update `project.md`**</span> — ⚡ Phase 2 todos marked complete; discoveries added
+7. ☑ <span style="color: purple">**Items tab — AgGrid rewrite with instant search**</span> — ⚡ replaced fat-button list + broken JS search with `streamlit-aggrid` v1.2.1; two columns: icon (60px, `JsCode` class-based `IconCellRenderer` rendering 32x32 wiki images) + name (flex, `floatingFilter=True` with `agTextColumnFilter` "contains" mode for per-keystroke client-side filtering); `headerHeight=0` hides column headers, floating filter bar serves as the search input; single-row click selection via `GridUpdateMode.SELECTION_CHANGED` triggers rerun and renders recipe card below grid; dark grayscale theme via `custom_css` overrides on alpine base (black bg, `#cccccc` text, invisible column borders, styled scrollbar); removed all old Items CSS (`.items-search-wrap`, `.item-row-btn`, `.item-row-visual`); removed `items_selected` session state
 
 ---
 
@@ -153,6 +157,14 @@ _One entry per issue. Before touching any code, list hypotheses ranked by likeli
 
 ## Phase Summaries
 
-_Written after each phase completes. 3–5 lines. What actually happened, what was found, what was surprising. The compressed artifact for future sessions and future models._
+_Written after each phase completes. 3-5 lines. What actually happened, what was found, what was surprising. The compressed artifact for future sessions and future models._
+
+### Phase 1
+
+⚡ Foundation built: mamba env, nbdev scaffold, `data.json` committed, `data.py` exports (`load_data`, `wiki_image_url`, `get_item_recipe`, `list_items`). Streamlit UI with Space Elevator Phase 3 objective cards (fat invisible `st.button` + visual overlay trick). Wiki image URLs render directly via `<img>` tags. End-to-end stack proven.
+
+### Phase 2 (in progress)
+
+⚡ Tab navigation added (Objectives / Items / Buildings). Items tab went through three iterations: (1) HTML table with query param onclick — worked but no instant search; (2) fat-button list with JS `oninput` filtering — failed because Streamlit strips `<script>` tags from `st.markdown`; (3) **AgGrid with floating filter** — works perfectly, per-keystroke client-side filtering, icon + name columns, dark grayscale theme via `custom_css`. The key discovery: Streamlit's HTML sanitizer blocks `<script>` injection, so any client-side interactivity must go through a proper component. AgGrid's floating filter is the cleanest solution for instant search without a Python rerun.
 
 ---

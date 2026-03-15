@@ -159,6 +159,30 @@ _Rules for how the AI operates on this project. Applied every session._
 11. ☑ <span style="color: purple">**Objective card polish**</span> — images enlarged (256px source, `width: calc(100% - 24px)`, `max-width: 200px`); card layout changed to `flex-start` with equal `16px 20px` padding; quantity colour changed to `#7c3aed` (deep violet) with purple glow; quantity font-weight set to 400; name font-size bumped to 0.84rem; first objective open by default on tab load
 12. ☑ <span style="color: purple">**Update `project.md`**</span> — discoveries, decisions, and todos updated to reflect all `phase-2-chip-navigation` work
 
+━━━━━━━━━━━━━━━━━━━━━[ PHASE 3 ]━━━━━━━━━━━━━━━━━━━━━
+
+**Goal:** CRT exit transition polish + full Buildings tab (production grid + upgrade progression chains).
+
+**Key decisions:**
+- ⚡ Group selector in UPGRADES view: neon sub-tabs (matching top-level tab style)
+- ⚡ PRODUCTION grid filter: functional buildings only (`powerConsumption > 0` + miners dict entries)
+- ⚡ Default progression group: Miners
+- ⚡ Unlock cost chips in detail panel: plain (non-navigable) — unlock costs are items but not recipe-lookup targets in this context
+
+1. ☐ **CRT exit transition** — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
+
+2. ☐ **Data functions — notebook + export** — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
+   - `list_buildings(data)` — functional buildings: `powerConsumption > 0` + all miners dict entries. Each: `{className, name, slug, description, powerConsumption, powerConsumptionExponent}`. Sorted A-Z.
+   - `get_building_unlock(class_name, data)` — reverse-lookup: `schematics → unlock.recipes[] → recipe.products[].item == class_name`. Returns `{schematic_name, tier, type, cost: [{name, amount}]}` or `None`.
+   - `get_upgrade_chain(slug_pattern, data)` — finds buildings whose `slug` contains pattern + `"mk-"`, sorted by Mk number, each enriched with `get_building_unlock` result.
+
+3. ☐ **Buildings tab — PRODUCTION inner tab** — AgGrid (same pattern as Items tab): icon column (wiki image), name, power (MW), tier columns. Floating filter on name. Row click → building detail card above grid. Card: header (name + image, gold/blue theme matching recipe card), body rows (description snippet, power draw, unlock schematic name + tier, unlock cost as plain text chips).
+
+4. ☐ **Buildings tab — UPGRADES inner tab** — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
+   - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
+
+5. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
+
 ---
 
 ## Debug Log

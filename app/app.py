@@ -83,6 +83,9 @@ def recipe_card(result: dict) -> str:
             cursor: pointer;
             transition: background 0.15s;
         }}
+        .recipe-chip, .recipe-chip * {{
+            text-decoration: none !important;
+        }}
         .recipe-chip:hover {{
             background: rgba(255,255,255,0.10);
         }}
@@ -349,8 +352,8 @@ st.markdown("""
     /* The actual st.button — tall, visual content hidden */
     div.stButton > button {
         width: 100%;
-        height: 350px !important;
-        min-height: 350px !important;
+        height: 300px !important;
+        min-height: 300px !important;
         font-size: 0 !important;
         color: transparent !important;
         background: linear-gradient(145deg, #ffffff, #d0d0d0, #bbbbbb) !important;
@@ -408,15 +411,15 @@ st.markdown("""
         position: relative;
         z-index: 2;
         pointer-events: none;
-        margin-top: -355px;
+        margin-top: -305px;
         margin-bottom: 5px;
-        height: 350px;
+        height: 300px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         text-align: center;
-        padding: 16px 20px 10px;
+        padding: 16px 20px;
     }
     .obj-card-visual img {
         border-radius: 10px;
@@ -434,16 +437,17 @@ st.markdown("""
     .obj-card-visual .obj-name {
         font-family: 'Orbitron', monospace;
         font-weight: 700;
-        font-size: 0.72rem;
+        font-size: 0.84rem;
         color: #000000;
         margin-bottom: 2px;
-        line-height: 1.2;
+        line-height: 1.3;
     }
     .obj-card-visual .obj-qty {
         font-family: 'Share Tech Mono', monospace;
         font-size: 1.5rem;
-        font-weight: 700;
-        color: #1a1a2e;
+        font-weight: 400;
+        color: #7c3aed;
+        text-shadow: 0 0 12px #7c3aed99, 0 0 28px #7c3aed44;
     }
     .obj-card-visual .obj-label {
         font-family: 'Share Tech Mono', monospace;
@@ -535,7 +539,7 @@ st.markdown("""
 
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
-    st.session_state.selected_item = None
+    st.session_state.selected_item = OBJECTIVES[0]["name"]  # ⚡ default: first objective open
 if "chip_item" not in st.session_state:
     st.session_state.chip_item = None
 

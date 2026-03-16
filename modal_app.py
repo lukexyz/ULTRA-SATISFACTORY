@@ -30,7 +30,7 @@ def _exclude(relpath: Path) -> bool:
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
-        "streamlit==1.45.1",
+        "streamlit==1.55.0",
         "streamlit-aggrid==1.2.1.post2",
         "pandas",
     )

@@ -83,6 +83,10 @@
 - ⚡ **Image download results:** 135/140 items downloaded successfully at both sizes. 5 failures (Factory Cart™, Golden Factory Cart™, Hover Pack, Non-fissile Uranium, Screw) — wiki URL mismatches or 404s. None in critical recipe chains.
 - ⚡ **Stlite filesystem constraint:** no actual filesystem at runtime. All files must be declared upfront in the `files:` option or loaded via `archives: [{ url: "./images.zip", format: "zip" }]`. Images must be committed to the repo (~2MB) for GitHub Pages to serve them.
 - ⚡ **`__pycache__` stale after nbdev_export:** after `nbdev_export` regenerates `data.py`, stale `.pyc` files in `ultra_satisfactory/__pycache__/` can cause `ImportError` for newly exported functions. Must delete the cache directory after export.
+- ⚡ **Wiki 403s with generic User-Agent:** the wiki blocks requests without a custom `User-Agent`. `scripts/download_images.py` uses `User-Agent: ULTRA-SATISFACTORY/1.0` which succeeds. Raw `urllib.request` or `curl` without that header returns 403.
+- ⚡ **All FICSIT build piece image slugs confirmed:** every unconfirmed variant slug (`Ramp_Wall_2m_(FICSIT)`, `Ramp_Wall_4m_(FICSIT)`, `Inv._Ramp_Wall_2m/4m_(FICSIT)`, `Inner/Outer_Corner_Roof_2m_(FICSIT)`, `Conveyor_Wall_x2/x3_(FICSIT)`) returned HTTP 200 with exact size-matched slugs — no fallbacks needed.
+- ⚡ **Tilted Wall variants needed overrides:** `Tilted Concave Wall 4m/8m`, `Tilted Corner Wall 4m/8m`, `Tilted Wall 4m/8m` were missing from the initial override map. Added as `Tilted_*_(FICSIT)` slugs. Final result: 0 failures across all 477 buildings at both 64px and 512px.
+- ⚡ **`local_image_url()` missing leading `/`:** `data.py` was returning `app/static/images/64/{slug}.png` (no leading slash). AgGrid's image renderer resolved paths relative to its own frontend build directory (`st_aggrid/frontend/build/app/static/...`), causing `FileNotFoundError` floods. Fixed by adding the leading `/`. The notebook `nbs/00_data.ipynb` already had the correct form — `data.py` had drifted out of sync. Committed `533a4dd`.
 
 ---
 
@@ -188,17 +192,17 @@ _Rules for how the AI operates on this project. Applied every session._
 
 1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
 
-2. ☐ **Data functions — notebook + export** — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
+2. ⚡ ☑ <span style="color: purple">**Data functions — notebook + export**</span> — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
    - `list_buildings(data)` — functional buildings: `powerConsumption > 0` + all miners dict entries. Each: `{className, name, slug, description, powerConsumption, powerConsumptionExponent}`. Sorted A-Z.
    - `get_building_unlock(class_name, data)` — reverse-lookup: `schematics → unlock.recipes[] → recipe.products[].item == class_name`. Returns `{schematic_name, tier, type, cost: [{name, amount}]}` or `None`.
    - `get_upgrade_chain(slug_pattern, data)` — finds buildings whose `slug` contains pattern + `"mk-"`, sorted by Mk number, each enriched with `get_building_unlock` result.
 
-3. ☐ **Buildings tab — PRODUCTION inner tab** — AgGrid (same pattern as Items tab): icon column (wiki image), name, power (MW), tier columns. Floating filter on name. Row click → building detail card above grid. Card: header (name + image, gold/blue theme matching recipe card), body rows (description snippet, power draw, unlock schematic name + tier, unlock cost as plain text chips).
+3. ⚡ ☑ <span style="color: purple">**Buildings tab — PRODUCTION inner tab**</span> — AgGrid (same pattern as Items tab): icon column (wiki image), name, power (MW), tier columns. Floating filter on name. Row click → building detail card above grid. Card: header (name + image, gold/blue theme matching recipe card), body rows (description snippet, power draw, unlock schematic name + tier, unlock cost as plain text chips).
 
-4. ☐ **Buildings tab — UPGRADES inner tab** — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
+4. ⚡ ☑ <span style="color: purple">**Buildings tab — UPGRADES inner tab**</span> — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
    - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
 
-6. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
+6. ⚡ ☑ <span style="color: purple">**Update `project.md`**</span> — Phase 3 discoveries added, todos #2/#3/#4/#6 marked complete.
 
 8. ⚡ ☐ **Fix card corner pixel glitch** — `border:1px solid` + `border-radius` + `overflow:hidden` + opaque header child causes sub-pixel Chromium compositing artifacts at rounded corners on both `recipe_card()` and `building_card()`. Previous `inset box-shadow` and `border-radius` on header attempts did not fully resolve it. Needs definitive fix.
 

@@ -244,6 +244,18 @@ def adapt_app_py(source: str) -> str:
         if 'from ultra_satisfactory.data import' in line:
             line = line.replace('from ultra_satisfactory.data import', 'from data import')
 
+        # Strip _default_tab line (stlite doesn't support st.tabs(default=))
+        if line.strip().startswith('_default_tab ='):
+            continue
+
+        # Strip default= kwarg from st.tabs() call (may be on its own line)
+        if 'default=_default_tab' in line:
+            import re
+            line = re.sub(r',?\s*default=_default_tab', '', line)
+            # If the line is now just whitespace or empty brackets, skip it
+            if not line.strip() or line.strip() in (')', ''):
+                continue
+
         adapted.append(line)
 
     return '\n'.join(adapted)

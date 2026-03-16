@@ -117,7 +117,10 @@ def recipe_card(result: dict) -> str:
             {item_cell(result['ingredients'])}
           </td>
           <td style="padding:10px 12px;text-align:center;vertical-align:middle;border-right:1px solid #222;">
-            <div style="font-weight:600;font-size:1.05em;color:#fff;">{machine}</div>
+            <a href="?building={machine.replace(' ', '%20')}"
+               style="font-weight:600;font-size:1.05em;color:#7ec8e3;text-decoration:none;
+                      text-shadow:0 0 8px #38bdf844;"
+               title="View in Buildings">{machine}</a>
             <div style="font-size:0.82em;color:#7ec8e3;">{cycle}s cycle &bull; {power} MW</div>
           </td>
           <td style="padding:10px 12px;vertical-align:middle;">
@@ -1286,6 +1289,9 @@ with tab_buildings:
 
         bld_grid_options = gb_bld.build()
 
+        # ⚡ Placeholder for detail card — sits ABOVE the grid
+        bld_placeholder = st.empty()
+
         # ⚡ Render the grid
         bld_grid_response = AgGrid(
             df_bld,
@@ -1315,82 +1321,22 @@ with tab_buildings:
         if not bld_selected_name and st.session_state.chip_building:
             bld_selected_name = st.session_state.chip_building
 
+        # ⚡ Render detail card into placeholder above the grid
         if bld_selected_name:
             bld_detail = next(
                 (b for b in all_buildings if b["name"] == bld_selected_name), None
             )
             if bld_detail:
-                st.markdown(
-                    f'<div style="text-align:center;margin-bottom:4px;">'
-                    f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
-                    f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
-                    f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
-                    f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>'
-                    + building_card(bld_detail),
-                    unsafe_allow_html=True,
-                )
-        if not bld_selected_name:
-            # ⚡ Ghost placeholder — shown before any row is selected
-            st.markdown('''
-            <div style="background:linear-gradient(135deg,#080810,#0d0d1a);
-                        border:1px solid #38bdf818;border-radius:10px;
-                        margin:12px 0;overflow:hidden;max-width:820px;
-                        box-shadow:0 0 12px #38bdf808, 0 0 30px #38bdf804;">
-              <!-- Ghost header bar -->
-              <div style="background:#07101a;padding:10px 16px;
-                          display:flex;align-items:center;gap:12px;
-                          border-bottom:1px solid #38bdf810;">
-                <div style="width:52px;height:52px;border-radius:6px;flex-shrink:0;
-                             background:#0e2030;border:2px solid #1e3a4a;opacity:0.6;"></div>
-                <div style="display:flex;flex-direction:column;gap:7px;">
-                  <div style="width:180px;height:12px;border-radius:4px;
-                               background:#1a3347;opacity:0.55;"></div>
-                  <div style="width:260px;height:9px;border-radius:4px;
-                               background:#112233;opacity:0.45;"></div>
-                </div>
-              </div>
-              <!-- Ghost body -->
-              <div style="padding:10px 16px 12px 16px;">
-        <table style="width:100%;border-collapse:separate;border-spacing:0;">
-                  <tr>
-                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
-                                width:50%;vertical-align:top;">
-                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
-                                  text-transform:uppercase;margin-bottom:6px;
-                                  font-family:'Share Tech Mono',monospace;">Power</div>
-                      <div style="width:80px;height:10px;border-radius:4px;
-                                   background:#1a3347;opacity:0.4;"></div>
-                    </td>
-                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
-                                border-left:1px solid #38bdf80e;
-                                width:50%;vertical-align:top;">
-                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
-                                  text-transform:uppercase;margin-bottom:6px;
-                                  font-family:'Share Tech Mono',monospace;">Build Cost</div>
-                      <div style="display:flex;gap:6px;">
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-                <!-- Prompt -->
-                <div style="text-align:center;margin-top:10px;padding-top:8px;
-                             border-top:1px solid #38bdf80a;">
-                  <span style="font-family:'Share Tech Mono',monospace;
-                                font-size:0.68rem;letter-spacing:0.28em;
-                                color:#38bdf844;text-transform:uppercase;
-                                text-shadow:0 0 14px #38bdf822;">
-                    select a building for details
-                  </span>
-                </div>
-              </div>
-            </div>
-            ''', unsafe_allow_html=True)
+                with bld_placeholder.container():
+                    st.markdown(
+                        f'<div style="text-align:center;margin-bottom:4px;">'
+                        f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
+                        f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
+                        f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
+                        f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>'
+                        + building_card(bld_detail),
+                        unsafe_allow_html=True,
+                    )
 
     # ----------------------------------------------------------------
     # ⚡ UPGRADES inner tab — curated Mk.N progression chains

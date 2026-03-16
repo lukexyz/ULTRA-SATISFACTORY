@@ -751,27 +751,6 @@ with tab_objectives:
             st.session_state.selected_item = None
             st.rerun()
 
-    # ⚡ Compact item thumbnail strip — thumbnails + quantities for the active phase
-    _thumb_parts = []
-    for it in OBJECTIVES:
-        _img = local_image_url(it["name"], 64)
-        _qty = f'{it["required"]:,}'
-        _thumb_parts.append(
-            f'<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'
-            f'<img src="{_img}" width="28" height="28" '
-            f'style="border-radius:4px;border:1px solid #2a2a3a;background:#0a0a1a;object-fit:contain;">'
-            f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.6rem;'
-            f'color:#e8d44d;letter-spacing:0.05em;">{_qty}</span>'
-            f'</div>'
-        )
-    _thumb_strip = (
-        f'<div style="display:flex;justify-content:center;align-items:flex-start;'
-        f'gap:16px;margin:6px 0 4px 0;">'
-        + ''.join(_thumb_parts)
-        + '</div>'
-    )
-    st.markdown(_thumb_strip, unsafe_allow_html=True)
-
     st.markdown(
         f'<div class="section-title" style="text-align:center;">'
         f'// SPACE ELEVATOR &mdash; PHASE {_active} //'
@@ -1189,6 +1168,28 @@ with tab_items:
                     &gt; No craftable recipe found for {display_item} &lt;
                 </div>
                 """, unsafe_allow_html=True)
+    else:
+        # ⚡ Empty-state placeholder — small elephant + prompt
+        with recipe_placeholder.container():
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:16px;
+                        padding:10px 18px;margin:8px 0;border-radius:8px;
+                        background:#0d0814;border:1px solid #ec489912;">
+              <pre style="margin:0;line-height:1.3;font-size:0.62rem;
+                          color:#ec489930;font-family:'Share Tech Mono',monospace;
+                          flex-shrink:0;user-select:none;">
+   .  .
+  (  (  )--,
+   '--'--'  )
+    \___|__/
+      | |
+     _| |_</pre>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;
+                            letter-spacing:0.22em;color:#ec489940;text-transform:uppercase;">
+                select an item to view its recipe
+              </span>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS
@@ -1487,6 +1488,19 @@ with tab_buildings:
                         + building_card(bld_detail),
                         unsafe_allow_html=True,
                     )
+        else:
+            # ⚡ Empty-state placeholder — subtle blue-tinted prompt
+            with bld_placeholder.container():
+                st.markdown("""
+                <div style="display:flex;align-items:center;gap:16px;
+                            padding:10px 18px;margin:8px 0;border-radius:8px;
+                            background:#040d14;border:1px solid #38bdf808;">
+                  <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;
+                                letter-spacing:0.22em;color:#38bdf820;text-transform:uppercase;">
+                    select a building to view details
+                  </span>
+                </div>
+                """, unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
     # ⚡ UPGRADES inner tab — curated Mk.N progression chains

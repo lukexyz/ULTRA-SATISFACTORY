@@ -169,7 +169,7 @@ _Rules for how the AI operates on this project. Applied every session._
 - ⚡ Default progression group: Miners
 - ⚡ Unlock cost chips in detail panel: plain (non-navigable) — unlock costs are items but not recipe-lookup targets in this context
 
-1. ☐ **CRT exit transition** — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
+1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
 
 2. ☐ **Data functions — notebook + export** — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
    - `list_buildings(data)` — functional buildings: `powerConsumption > 0` + all miners dict entries. Each: `{className, name, slug, description, powerConsumption, powerConsumptionExponent}`. Sorted A-Z.
@@ -181,7 +181,10 @@ _Rules for how the AI operates on this project. Applied every session._
 4. ☐ **Buildings tab — UPGRADES inner tab** — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
    - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
 
-5. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
+5. ☐ **Image cache — local static serving** — download all 152 item images from wiki.gg (64px) once to `app/static/images/`. Add `enableStaticServing = true` to `.streamlit/config.toml`. Add `local_image_url(name, fallback_size=64)` to `data.py` — returns `/app/static/images/{slug}.png` if file exists, falls back to `wiki_image_url`. Swap all call sites in `app.py` and `data.py`. Images committed to repo (~2MB) for stlite/GitHub Pages compatibility. Run script noted in `project.md` as a one-time setup step.
+   - Stlite note: images committed to repo are served as static assets by GitHub Pages. When deploying to stlite, mount via `archives: [{ url: "./app/static/images.zip", format: "zip" }]` in the HTML wrapper.
+
+6. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
 
 ---
 

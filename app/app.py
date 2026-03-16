@@ -90,12 +90,12 @@ def recipe_card(result: dict) -> str:
             background: rgba(255,255,255,0.10);
         }}
     </style>
-    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:none;
+    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #e8d44d;
                 border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
                 color:#eee;overflow:hidden;max-width:820px;
-                box-shadow:inset 0 0 0 1px #e8d44d, 0 0 15px #e8d44d44, 0 0 30px #e8d44d22;">
+                box-shadow:0 0 15px #e8d44d44, 0 0 30px #e8d44d22;">
       <div style="background:linear-gradient(90deg,#e8d44d,#d4a017);padding:8px 16px;
-                  display:flex;align-items:center;gap:12px;">
+                  display:flex;align-items:center;gap:12px;border-radius:9px 9px 0 0;">
         <img src="{img}" width="48" height="48"
              style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;">
         <div>
@@ -172,13 +172,13 @@ def building_card(bld: dict) -> str:
     desc_snippet = (description[:160] + '…') if len(description) > 160 else description
 
     return f'''
-    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:none;
+    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #38bdf8;
                 border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
                 color:#eee;overflow:hidden;max-width:820px;
-                box-shadow:inset 0 0 0 1px #38bdf8, 0 0 15px #38bdf844, 0 0 30px #38bdf822;">
+                box-shadow:0 0 15px #38bdf844, 0 0 30px #38bdf822;">
       <!-- Header bar (blue theme for buildings) -->
       <div style="background:linear-gradient(90deg,#0ea5e9,#0284c7);padding:8px 16px;
-                  display:flex;align-items:center;gap:12px;">
+                  display:flex;align-items:center;gap:12px;border-radius:9px 9px 0 0;">
         <img src="{img}" width="52" height="52"
              style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;object-fit:contain;">
         <div>
@@ -900,7 +900,7 @@ with tab_items:
                 firstFilter.appendChild(btn);
             }
             var filterInput = wrapper.querySelector('.ag-floating-filter-input input');
-            if (filterInput) filterInput.setAttribute('placeholder', 'Search items...');
+            if (filterInput) filterInput.setAttribute('placeholder', 'Search items');
         }, 200);
     }
     """)
@@ -1177,7 +1177,7 @@ function(params) {
             firstFilter.appendChild(btn);
         }
         var filterInput = wrapper.querySelector('.ag-floating-filter-input input');
-        if (filterInput) filterInput.setAttribute('placeholder', 'Search buildings...');
+        if (filterInput) filterInput.setAttribute('placeholder', 'Search buildings');
     }, 200);
 }
 """)

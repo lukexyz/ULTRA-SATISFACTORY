@@ -181,6 +181,11 @@ _Rules for how the AI operates on this project. Applied every session._
 - ⚡ Default progression group: Miners
 - ⚡ Unlock cost chips in detail panel: plain (non-navigable) — unlock costs are items but not recipe-lookup targets in this context
 
+5. ☑ <span style="color: purple">**Image cache — local static serving**</span> — 135/140 item images downloaded at two sizes (64px thumbnails, 256px hero cards) to `app/static/images/{size}/`. `local_image_url(name, size=64)` picks smallest cached size >= requested, falls back to wiki.gg. `enableStaticServing = true` in config.toml. All call sites swapped in `app.py` and `data.py`. 5 failures (Factory Cart™, Golden Factory Cart™, Hover Pack, Non-fissile Uranium, Screw) — none in critical recipe chains. ~2MB committed to repo for stlite/GitHub Pages compatibility.
+   - Stlite note: images committed to repo are served as static assets by GitHub Pages. When deploying to stlite, mount via `archives: [{ url: "./app/static/images.zip", format: "zip" }]` in the HTML wrapper.
+
+7. ⚡ ☑ <span style="color: purple">**Scrape missing building images**</span> — added `WIKI_NAME_OVERRIDES` dict to `scripts/download_images.py`; maps 92 `data.json` display names to correct wiki image slugs (FICSIT variant names, renamed generators, Pipeline Junction Cross). All 477 buildings now have cached 64px + 512px images; 0 failures. Committed `d57061b`.
+
 1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
 
 2. ☐ **Data functions — notebook + export** — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
@@ -193,12 +198,7 @@ _Rules for how the AI operates on this project. Applied every session._
 4. ☐ **Buildings tab — UPGRADES inner tab** — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
    - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
 
-5. ☑ <span style="color: purple">**Image cache — local static serving**</span> — 135/140 item images downloaded at two sizes (64px thumbnails, 256px hero cards) to `app/static/images/{size}/`. `local_image_url(name, size=64)` picks smallest cached size >= requested, falls back to wiki.gg. `enableStaticServing = true` in config.toml. All call sites swapped in `app.py` and `data.py`. 5 failures (Factory Cart™, Golden Factory Cart™, Hover Pack, Non-fissile Uranium, Screw) — none in critical recipe chains. ~2MB committed to repo for stlite/GitHub Pages compatibility.
-   - Stlite note: images committed to repo are served as static assets by GitHub Pages. When deploying to stlite, mount via `archives: [{ url: "./app/static/images.zip", format: "zip" }]` in the HTML wrapper.
-
 6. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
-
-7. ⚡ ☐ **Scrape missing building images** — run `scripts/download_images.py` targeting buildings list; many structure/logistics/decor buildings (e.g. Basic Wall 1m) have no local image and fall back to broken wiki URLs. Download 64px + 512px for all buildings that currently have no cached file. Commit new images to repo.
 
 8. ⚡ ☐ **Fix card corner pixel glitch** — `border:1px solid` + `border-radius` + `overflow:hidden` + opaque header child causes sub-pixel Chromium compositing artifacts at rounded corners on both `recipe_card()` and `building_card()`. Previous `inset box-shadow` and `border-radius` on header attempts did not fully resolve it. Needs definitive fix.
 

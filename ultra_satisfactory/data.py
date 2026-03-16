@@ -51,9 +51,9 @@ def image_slug(name: str) -> str:
 
 # %% ../nbs/00_data.ipynb #e6f7a8b9
 # ⚡ Resolve once at import time — works for both local dev and stlite
-_STATIC_DIR: Path | None = None
+_IMAGES_BASE: Path | None = None
 
-def _find_static_dir() -> Path | None:
+def _find_images_base() -> Path | None:
     """Locate app/static/images/ by walking up from this file."""
     here = Path(__file__).resolve().parent
     for _ in range(4):
@@ -63,19 +63,35 @@ def _find_static_dir() -> Path | None:
         here = here.parent
     return None
 
-_STATIC_DIR = _find_static_dir()
+_IMAGES_BASE = _find_images_base()
+
+# Available cached sizes (subdirectories under images/)
+_CACHED_SIZES = [256, 64]  # checked in order — prefer larger
 
 
 def local_image_url(item_name: str, size: int = 64) -> str:
     """Return local static URL if the image exists, else fall back to wiki.gg.
 
-    Local path served by Streamlit: /app/static/images/{slug}.png
-    The `size` parameter is ignored for local images (all cached at 64px)
-    but passed through to wiki_image_url() as a fallback.
+    Images are stored in size subdirectories:
+        /app/static/images/64/{slug}.png   -- thumbnails
+        /app/static/images/256/{slug}.png  -- hero cards
+
+    Picks the smallest cached size >= requested size.
+    Falls back to wiki.gg if no local file found.
     """
     slug = image_slug(item_name)
-    if _STATIC_DIR is not None and (_STATIC_DIR / f'{slug}.png').exists():
-        return f'/app/static/images/{slug}.png'
+    if _IMAGES_BASE is not None:
+        # Find best matching size: smallest cached size >= requested
+        best = None
+        for s in _CACHED_SIZES:
+            path = _IMAGES_BASE / str(s) / f'{slug}.png'
+            if path.exists():
+                if s >= size:
+                    best = s
+                elif best is None:
+                    best = s  # fallback to smaller if nothing bigger
+        if best is not None:
+            return f'/app/static/images/{best}/{slug}.png'
     return wiki_image_url(item_name, size)
 
 # %% ../nbs/00_data.ipynb #2444f397

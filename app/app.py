@@ -567,7 +567,7 @@ with tab_objectives:
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:
-            img_url = local_image_url(obj["name"])
+            img_url = local_image_url(obj["name"], 256)
 
             # The actual st.button — tall, text hidden via CSS
             if st.button("select", key=f"obj_btn_{i}", use_container_width=True):

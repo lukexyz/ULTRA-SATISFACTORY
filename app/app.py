@@ -620,6 +620,31 @@ st.markdown("""
     .ag-root-wrapper {
         border: none !important;
     }
+
+    /* ⚡ Phase selector — centred dark selectbox */
+    div[data-testid="stSelectbox"] {
+        display: flex;
+        justify-content: center;
+    }
+    div[data-testid="stSelectbox"] > div {
+        max-width: 320px;
+        width: 100%;
+    }
+    div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+        background-color: #0a0a1a !important;
+        border: 1px solid #2a2a3a !important;
+        border-radius: 6px !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        font-size: 0.8rem !important;
+        color: #e8d44d !important;
+        letter-spacing: 0.08em !important;
+    }
+    div[data-testid="stSelectbox"] [data-baseweb="select"] > div:hover {
+        border-color: #e8d44d88 !important;
+    }
+    div[data-testid="stSelectbox"] svg {
+        fill: #e8d44d88 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -710,91 +735,50 @@ with tab_objectives:
     OBJECTIVES = SPACE_ELEVATOR_PHASES[st.session_state.selected_phase]
     _active = st.session_state.selected_phase
 
-    # ⚡ Build phase pill strip HTML
-    def _phase_pill(phase_num: int, active: bool) -> str:
-        items = SPACE_ELEVATOR_PHASES[phase_num]
-        desc  = PHASE_DESCRIPTIONS[phase_num]
-
-        # Thumbnail row
-        thumbs_html = ''.join(
-            f'<img src="{local_image_url(it["name"], 64)}" width="24" height="24" '
-            f'style="border-radius:3px;border:1px solid #333;background:#111;'
-            f'object-fit:contain;">'
-            for it in items
+    # ⚡ Centred phase selector — selectbox in a narrow centre column
+    _sel_l, _sel_c, _sel_r = st.columns([1, 2, 1])
+    with _sel_c:
+        selected = st.selectbox(
+            "Space Elevator Phase",
+            options=[1, 2, 3, 4, 5],
+            index=st.session_state.selected_phase - 1,
+            format_func=lambda x: f"Phase {x}  —  {PHASE_DESCRIPTIONS[x]}",
+            key="phase_selector",
+            label_visibility="collapsed",
         )
+        if selected != st.session_state.selected_phase:
+            st.session_state.selected_phase = selected
+            st.session_state.selected_item = None
+            st.rerun()
 
-        if active:
-            # ⚡ Expanded active pill: gold border + glow, description + item list
-            items_html = ''.join(
-                f'<div style="display:flex;align-items:center;gap:5px;'
-                f'justify-content:center;white-space:nowrap;">'
-                f'<span style="color:#e8d44d;font-weight:700;">{it["required"]:,}&times;</span>'
-                f'<span style="color:#aaa;">{it["name"]}</span>'
-                f'</div>'
-                for it in items
-            )
-            return (
-                f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;'
-                f'padding:8px 14px;border:1px solid #e8d44d;border-radius:8px;'
-                f'background:#0f0f23;box-shadow:0 0 14px #e8d44d33,0 0 28px #e8d44d11;'
-                f'min-width:120px;cursor:default;">'
-                f'<div style="width:22px;height:22px;border-radius:50%;background:#e8d44d;'
-                f'display:flex;align-items:center;justify-content:center;'
-                f'font-family:\'Share Tech Mono\',monospace;font-size:0.72rem;'
-                f'font-weight:700;color:#000;">{phase_num}</div>'
-                f'<div style="display:flex;gap:3px;justify-content:center;">{thumbs_html}</div>'
-                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.6rem;'
-                f'color:#e8d44d99;letter-spacing:0.12em;text-transform:uppercase;">{desc}</div>'
-                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.62rem;'
-                f'display:flex;flex-direction:column;gap:1px;align-items:center;">'
-                f'{items_html}</div>'
-                f'</div>'
-            )
-        else:
-            # ⚡ Compact inactive pill: dim border, just number + thumbnails
-            return (
-                f'<a href="?phase={phase_num}" style="text-decoration:none;">'
-                f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;'
-                f'padding:8px 10px;border:1px solid #2a2a3a;border-radius:8px;'
-                f'background:#0a0a1a;min-width:60px;cursor:pointer;'
-                f'transition:border-color 0.15s,background 0.15s;">'
-                f'<div style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;'
-                f'display:flex;align-items:center;justify-content:center;'
-                f'font-family:\'Share Tech Mono\',monospace;font-size:0.68rem;'
-                f'font-weight:700;color:#666;">{phase_num}</div>'
-                f'<div style="display:flex;gap:3px;justify-content:center;opacity:0.6;">{thumbs_html}</div>'
-                f'</div>'
-                f'</a>'
-            )
-
-    _pills = []
-    for p in range(1, 6):
-        _pills.append(_phase_pill(p, p == _active))
-        if p < 5:
-            _pills.append(
-                '<div style="color:#2a2a3a;font-size:1.1rem;padding:0 4px;'
-                'align-self:center;">&#9656;</div>'
-            )
-
-    _pill_strip = (
-        '<div style="display:flex;align-items:center;justify-content:center;'
-        'flex-wrap:nowrap;gap:0;margin:8px auto 12px auto;">'
-        + ''.join(_pills)
+    # ⚡ Compact item thumbnail strip — thumbnails + quantities for the active phase
+    _thumb_parts = []
+    for it in OBJECTIVES:
+        _img = local_image_url(it["name"], 64)
+        _qty = f'{it["required"]:,}'
+        _thumb_parts.append(
+            f'<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'
+            f'<img src="{_img}" width="28" height="28" '
+            f'style="border-radius:4px;border:1px solid #2a2a3a;background:#0a0a1a;object-fit:contain;">'
+            f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.6rem;'
+            f'color:#e8d44d;letter-spacing:0.05em;">{_qty}</span>'
+            f'</div>'
+        )
+    _thumb_strip = (
+        f'<div style="display:flex;justify-content:center;align-items:flex-start;'
+        f'gap:16px;margin:6px 0 4px 0;">'
+        + ''.join(_thumb_parts)
         + '</div>'
     )
-    st.markdown(_pill_strip, unsafe_allow_html=True)
+    st.markdown(_thumb_strip, unsafe_allow_html=True)
 
     st.markdown(
         f'<div class="section-title" style="text-align:center;">'
         f'// SPACE ELEVATOR &mdash; PHASE {_active} //'
-        f'</div>'
-        f'<div style="text-align:center;font-family:\'Share Tech Mono\',monospace;'
-        f'font-size:0.65rem;color:#555;letter-spacing:0.2em;text-transform:uppercase;'
-        f'margin-top:-6px;margin-bottom:10px;">'
-        f'{PHASE_DESCRIPTIONS[_active]}'
         f'</div>',
         unsafe_allow_html=True,
     )
+
 
     cols = st.columns(len(OBJECTIVES), gap="medium")
 

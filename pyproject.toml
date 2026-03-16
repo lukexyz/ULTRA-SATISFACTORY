@@ -18,8 +18,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/lukedavisbbd/ultra-satisfactory"
-Documentation = "https://lukedavisbbd.github.io/ultra-satisfactory/"
+Repository = "https://github.com/lukexyz/ULTRA-SATISFACTORY"
+Documentation = "https://lukexyz.github.io/ULTRA-SATISFACTORY/"
 
 [project.entry-points.nbdev]
 ultra_satisfactory = "ultra_satisfactory._modidx:d"

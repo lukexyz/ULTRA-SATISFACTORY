@@ -821,7 +821,10 @@ with tab_objectives:
             """, unsafe_allow_html=True)
     else:
         # ⚡ Purple ghost placeholder — shown before any objective card is clicked
-        st.markdown("""
+        # Shimmer styles inlined (DOMPurify strips class attributes in separate st.markdown calls)
+        _sb  = "background:linear-gradient(90deg,#2a1548 25%,#3d1f6e 50%,#2a1548 75%);background-size:400% 100%;animation:shimmer-once 2s ease-in-out 1 forwards;"
+        _sbd = "background:linear-gradient(90deg,#1a0e2e 25%,#2a1548 50%,#1a0e2e 75%);background-size:400% 100%;animation:shimmer-once 2s ease-in-out 1 forwards;"
+        st.markdown(f"""
         <div style="background:linear-gradient(135deg,#0c0816,#110e1e);
                     border:1px solid #a855f718;border-radius:10px;
                     margin:12px 0;overflow:hidden;max-width:820px;
@@ -833,65 +836,54 @@ with tab_objectives:
             <div style="width:48px;height:48px;border-radius:6px;flex-shrink:0;
                          background:#1a0e2e;border:2px solid #2a1548;opacity:0.6;"></div>
             <div style="display:flex;flex-direction:column;gap:7px;">
-              <div class="ghost-bar" style="width:160px;height:12px;border-radius:4px;opacity:0.6;"></div>
-              <div class="ghost-bar-dim" style="width:220px;height:9px;border-radius:4px;opacity:0.45;"></div>
+              <div style="width:160px;height:12px;border-radius:4px;opacity:0.6;{_sb}"></div>
+              <div style="width:220px;height:9px;border-radius:4px;opacity:0.45;{_sbd}"></div>
             </div>
           </div>
           <!-- Ghost table -->
           <table style="width:100%;border-collapse:collapse;margin:0;">
             <tr style="background:#0a0612;">
-              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
-                         width:40%;">
-                <div class="ghost-bar" style="width:90px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;width:40%;">
+                <div style="width:90px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;{_sb}"></div>
               </th>
-              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
-                         width:25%;">
-                <div class="ghost-bar" style="width:70px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;width:25%;">
+                <div style="width:70px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;{_sb}"></div>
               </th>
-              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
-                         width:35%;">
-                <div class="ghost-bar" style="width:60px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;width:35%;">
+                <div style="width:60px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;{_sb}"></div>
               </th>
             </tr>
             <tr>
-              <td style="padding:14px 12px;vertical-align:middle;
-                          border-right:1px solid #a855f708;">
+              <td style="padding:14px 12px;vertical-align:middle;border-right:1px solid #a855f708;">
                 <div style="display:flex;flex-direction:column;gap:8px;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="width:40px;height:40px;border-radius:4px;
-                                 background:#1a0e2e;border:1px solid #2a1548;
-                                 opacity:0.5;flex-shrink:0;"></div>
+                    <div style="width:40px;height:40px;border-radius:4px;background:#1a0e2e;border:1px solid #2a1548;opacity:0.5;flex-shrink:0;"></div>
                     <div style="display:flex;flex-direction:column;gap:5px;">
-                      <div class="ghost-bar" style="width:100px;height:9px;border-radius:4px;opacity:0.45;"></div>
-                      <div class="ghost-bar-dim" style="width:60px;height:7px;border-radius:4px;opacity:0.35;"></div>
+                      <div style="width:100px;height:9px;border-radius:4px;opacity:0.45;{_sb}"></div>
+                      <div style="width:60px;height:7px;border-radius:4px;opacity:0.35;{_sbd}"></div>
                     </div>
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="width:40px;height:40px;border-radius:4px;
-                                 background:#1a0e2e;border:1px solid #2a1548;
-                                 opacity:0.5;flex-shrink:0;"></div>
+                    <div style="width:40px;height:40px;border-radius:4px;background:#1a0e2e;border:1px solid #2a1548;opacity:0.5;flex-shrink:0;"></div>
                     <div style="display:flex;flex-direction:column;gap:5px;">
-                      <div class="ghost-bar" style="width:80px;height:9px;border-radius:4px;opacity:0.45;"></div>
-                      <div class="ghost-bar-dim" style="width:50px;height:7px;border-radius:4px;opacity:0.35;"></div>
+                      <div style="width:80px;height:9px;border-radius:4px;opacity:0.45;{_sb}"></div>
+                      <div style="width:50px;height:7px;border-radius:4px;opacity:0.35;{_sbd}"></div>
                     </div>
                   </div>
                 </div>
               </td>
-              <td style="padding:14px 12px;text-align:center;vertical-align:middle;
-                          border-right:1px solid #a855f708;">
+              <td style="padding:14px 12px;text-align:center;vertical-align:middle;border-right:1px solid #a855f708;">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                  <div class="ghost-bar" style="width:90px;height:11px;border-radius:4px;opacity:0.5;"></div>
-                  <div class="ghost-bar-dim" style="width:110px;height:8px;border-radius:4px;opacity:0.35;"></div>
+                  <div style="width:90px;height:11px;border-radius:4px;opacity:0.5;{_sb}"></div>
+                  <div style="width:110px;height:8px;border-radius:4px;opacity:0.35;{_sbd}"></div>
                 </div>
               </td>
               <td style="padding:14px 12px;vertical-align:middle;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <div style="width:40px;height:40px;border-radius:4px;
-                               background:#1a0e2e;border:1px solid #2a1548;
-                               opacity:0.5;flex-shrink:0;"></div>
+                  <div style="width:40px;height:40px;border-radius:4px;background:#1a0e2e;border:1px solid #2a1548;opacity:0.5;flex-shrink:0;"></div>
                   <div style="display:flex;flex-direction:column;gap:5px;">
-                    <div class="ghost-bar" style="width:100px;height:9px;border-radius:4px;opacity:0.45;"></div>
-                    <div class="ghost-bar-dim" style="width:60px;height:7px;border-radius:4px;opacity:0.35;"></div>
+                    <div style="width:100px;height:9px;border-radius:4px;opacity:0.45;{_sb}"></div>
+                    <div style="width:60px;height:7px;border-radius:4px;opacity:0.35;{_sbd}"></div>
                   </div>
                 </div>
               </td>

@@ -405,6 +405,96 @@ def get_building_unlock(class_name: str, data: dict) -> dict | None:
     return None
 
 
+# %% ../nbs/00_data.ipynb
+def get_building_produces(class_key: str, data: dict) -> list[dict]:
+    """Return all items produceable by a building, grouped by unlock tier.
+
+    Scans recipes where class_key is in producedIn, inMachine=True,
+    forBuilding=False. For each product item, finds its earliest non-alternate
+    unlock schematic to derive a tier_label (T0–T8, MAM, ALT, SHOP).
+
+    Returns [{name, class_key, tier_label}], sorted by tier_label then A-Z by name.
+    """
+    recipes = data.get("recipes", {})
+    items = data.get("items", {})
+    resources = data.get("resources", {})
+    schematics = data.get("schematics", {})
+
+    # Build a reverse-lookup: item_class_key -> earliest non-alternate unlock schematic
+    item_unlock = {}
+    for sch in schematics.values():
+        unlock_recipes = sch.get("unlock", {}).get("recipes", [])
+        for rk in unlock_recipes:
+            recipe = recipes.get(rk, {})
+            # Skip building recipes and alternate recipes for primary lookup
+            if recipe.get("forBuilding"):
+                continue
+            recipe_is_alt = recipe.get("alternate", False)
+            for prod in recipe.get("products", []):
+                ik = prod["item"]
+                if ik not in item_unlock:
+                    item_unlock[ik] = (sch, recipe_is_alt)
+                else:
+                    # Prefer non-alternate schematics, or lower tier if both are same type
+                    existing_sch, existing_is_alt = item_unlock[ik]
+                    sch_tier = sch.get("tier", 999)
+                    existing_tier = existing_sch.get("tier", 999)
+                    # Prefer non-alternate, then lower tier
+                    if recipe_is_alt and not existing_is_alt:
+                        continue  # Keep existing non-alternate
+                    if sch_tier < existing_tier:
+                        item_unlock[ik] = (sch, recipe_is_alt)
+
+    def _tier_label(item_key: str, recipe_is_alt: bool) -> str:
+        """Derive a tier label (T0–T8, MAM, ALT, SHOP) for an item."""
+        if item_key not in item_unlock:
+            return "T0"  # Fallback
+        sch, _ = item_unlock[item_key]
+        sch_type = sch.get("type", "")
+        sch_tier = sch.get("tier", 0)
+        is_mam = sch.get("mam", False)
+        is_alternate = sch.get("alternate", False)
+        
+        # Check if recipe itself is alternate (Hard Drive, etc.)
+        if recipe_is_alt or is_alternate or sch_type in ("EST_Alternate", "EST_HardDrive"):
+            return "ALT"
+        if is_mam or sch_type == "EST_MAM":
+            return "MAM"
+        if sch_type == "EST_ResourceSink":
+            return "SHOP"
+        # Tutorial, Milestone, Custom all use tier number
+        return f"T{sch_tier}"
+
+    # Tier sort order
+    tier_order = {
+        "T0": 0, "T1": 1, "T2": 2, "T3": 3, "T4": 4, "T5": 5, "T6": 6, "T7": 7, "T8": 8,
+        "MAM": 9, "ALT": 10, "SHOP": 11
+    }
+
+    seen = set()
+    result = []
+    for rv in recipes.values():
+        if not rv.get("inMachine"):
+            continue
+        if rv.get("forBuilding"):
+            continue
+        if class_key not in rv.get("producedIn", []):
+            continue
+        recipe_is_alt = rv.get("alternate", False)
+        for p in rv.get("products", []):
+            ck = p["item"]
+            if ck in seen:
+                continue
+            seen.add(ck)
+            item_data = items.get(ck) or resources.get(ck, {})
+            name = item_data.get("name", ck)
+            tier_label = _tier_label(ck, recipe_is_alt)
+            result.append({"name": name, "class_key": ck, "tier_label": tier_label})
+
+    # Sort by tier_label order, then by name within tier
+    return sorted(result, key=lambda x: (tier_order.get(x["tier_label"], 99), x["name"].lower()))
+
+
 # %% ../nbs/00_data.ipynb #34039c13
 def get_upgrade_chain(name_prefix: str, data: dict) -> list[dict]:
     """Return all Mk.N buildings matching name_prefix, sorted by Mk number.

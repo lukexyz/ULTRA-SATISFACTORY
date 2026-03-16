@@ -219,21 +219,42 @@ def building_card(bld: dict) -> str:
             )
         return ''.join(parts)
 
-    # Produces chips — navigable links to ITEMS tab
+     # Produces chips — navigable links to ITEMS tab, grouped by tier label
     def produces_chips(produces_list):
         if not produces_list:
             return '<span style="color:#555;font-size:0.82em;">—</span>'
-        parts = []
+        
+        # Group by tier_label
+        grouped = {}
         for p in produces_list:
-            img_url = local_image_url(p['name'])
-            encoded = p['name'].replace(' ', '%20').replace("'", "%27")
-            parts.append(
-                f'<a class="recipe-chip" href="?item={encoded}">'
-                f'<img src="{img_url}" width="28" height="28" '
-                f'style="border-radius:3px;border:1px solid #444;background:#111;">'
-                f'<span style="font-size:0.82em;color:#ccc;">{p["name"]}</span></a>'
-            )
-        return ''.join(parts)
+            tier = p.get('tier_label', 'T0')
+            if tier not in grouped:
+                grouped[tier] = []
+            grouped[tier].append(p)
+        
+        # Tier sort order
+        tier_order = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "MAM", "ALT", "SHOP"]
+        sorted_tiers = sorted(grouped.keys(), key=lambda x: tier_order.index(x) if x in tier_order else 99)
+        
+        # Build HTML: one row per tier group
+        rows = []
+        for tier in sorted_tiers:
+            items = grouped[tier]
+            chips_html = []
+            for p in items:
+                img_url = local_image_url(p['name'])
+                encoded = p['name'].replace(' ', '%20').replace("'", "%27")
+                chips_html.append(
+                    f'<a class="recipe-chip" href="?item={encoded}">'
+                    f'<img src="{img_url}" width="28" height="28" '
+                    f'style="border-radius:3px;border:1px solid #444;background:#111;">'
+                    f'<span style="font-size:0.82em;color:#ccc;">{p["name"]}</span></a>'
+                )
+            tier_label_html = f'<span style="font-size:0.65em;color:#38bdf844;letter-spacing:0.1em;font-family:\'Share Tech Mono\',monospace;margin-right:8px;min-width:24px;display:inline-block;">{tier}</span>'
+            row_html = f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #1e293b;">{tier_label_html}{"".join(chips_html)}</div>'
+            rows.append(row_html)
+        
+        return ''.join(rows)
 
     desc_snippet = (description[:160] + '…') if len(description) > 160 else description
 

@@ -312,7 +312,7 @@ def building_card(bld: dict) -> str:
             </td>
             <td style="padding:6px 8px;border-top:1px solid #1e293b;border-left:1px solid #1e293b;width:50%;vertical-align:top;">
               <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Produces</div>
-              <div style="line-height:1.8;max-height:400px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1e3a4a #0a0a1a;">{produces_chips(produces)}</div>
+              <div style="line-height:1.8;max-height:500px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1e3a4a #0a0a1a;">{produces_chips(produces)}</div>
             </td>
           </tr>
         </table>

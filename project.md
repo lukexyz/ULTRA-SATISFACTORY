@@ -96,6 +96,7 @@
 - ⚡ **Shimmer animation must be fully inlined:** `@keyframes` in global style block is fine, but `class="ghost-bar"` on elements in a separate `st.markdown` gets stripped. Fixed by inlining the full `background` + `animation` in each element's `style=` attribute, using Python variables `_sb` and `_sbd` for brevity.
 - ⚡ **`display:none` vs `visibility:hidden` on AgGrid filter cells:** `visibility:hidden` hides the cell visually but preserves layout space, preventing the search input from expanding to fill the row. `display:none` removes it from layout entirely. Ultimately resolved by removing the category/power/tier columns from buildings grid, leaving just icon + name (matching ITEMS tab layout).
 - ⚡ **`get_building_produces()` scans recipes by `producedIn`:** no direct field on building objects lists what they produce. Cross-references `data["recipes"]` filtering by `class_key in recipe["producedIn"]` and `inMachine=True` and `forBuilding=False`. Returns `[{name, class_key}]` sorted A-Z. Added to `ultra_satisfactory/data.py`; enriched onto each `all_buildings` entry at render time; building card POWER cell replaced with PRODUCES chips linking to ITEMS tab.
+- ⚡ **Item unlock tiers via schematics cross-reference:** items have no `tier` field directly; must trace via `schematic → unlock.recipes → [recipe_key] → recipe → products → item`. Each schematic has `tier` (0-8), `type` (EST_Tutorial, EST_Milestone, EST_MAM, EST_Alternate, EST_HardDrive, EST_Custom, EST_ResourceSink), `mam` (bool), `alternate` (bool). For any item, find its earliest non-alternate unlock schematic and derive a label: T0–T8 (for tiers), MAM (research trees), ALT (hard drive alternates), SHOP (resource sink unlocks). Items can appear in multiple unlock schemes; prefer the earliest non-alternate. Fallback: T0 for unlocatable items. This logic is now in `get_building_produces()` which returns `[{name, class_key, tier_label}]` sorted by tier order then A-Z.
 
 ---
 
@@ -221,7 +222,8 @@ _Rules for how the AI operates on this project. Applied every session._
 
 12. ⚡ ☑ <span style="color: purple">**Building card: PRODUCES cell replacing POWER**</span> — `get_building_produces(class_key, data)` added to `data.py`; scans recipes by `producedIn`, returns `[{name, class_key}]` sorted A-Z. Enriched onto each `all_buildings` entry at render time. `building_card()` POWER cell replaced with PRODUCES cell showing `recipe-chip` links to ITEMS tab (same chip style as build cost). Committed `b2858ab`.
 
-1. ☐ **CRT exit transition** *(parked)*
+13. ⚡ ☑ <span style="color: purple">**Building produces: group by tier with dividers**</span> — enhanced `get_building_produces()` to cross-reference schematics and derive a `tier_label` (T0–T8, MAM, ALT, SHOP) per item. Returns `[{name, class_key, tier_label}]`. Updated `produces_chips()` in `building_card()` to group by tier: each tier gets its own row with a faint monospace tier label (e.g., `T0`, `MAM`) and a subtle bottom border. Tiers sorted T0→T8→MAM→ALT→SHOP; items A-Z within each tier. Tested on Constructor (24 items across 7 tiers), Smelter (4 items, 2 tiers), Refinery (23 items across 4 tiers). Committed `f36be8b`.
+
 
 ---
 

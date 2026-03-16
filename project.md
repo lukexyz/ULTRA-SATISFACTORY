@@ -242,8 +242,12 @@ _Written after each phase completes. 3-5 lines. What actually happened, what was
 
 ⚡ Foundation built: mamba env, nbdev scaffold, `data.json` committed, `data.py` exports (`load_data`, `wiki_image_url`, `get_item_recipe`, `list_items`). Streamlit UI with Space Elevator Phase 3 objective cards (fat invisible `st.button` + visual overlay trick). Wiki image URLs render directly via `<img>` tags. End-to-end stack proven.
 
-### Phase 2 (in progress)
+### Phase 2
 
 ⚡ Tab navigation added (Objectives / Items / Buildings). Items tab went through three iterations: (1) HTML table with query param onclick; (2) fat-button list with JS `oninput` filtering (failed — Streamlit strips `<script>`); (3) **AgGrid with floating filter** — per-keystroke client-side filtering, icon + name columns, dark `custom_css` theme. Clickable ingredient/product chips added to recipe cards using `<a href="?item=Name">` anchor tags (DOMPurify strips `onclick` but not `href`); hover via CSS `:hover`. Chip navigation fixed to land on the Items tab via `st.tabs(default="ITEMS")` set from module-level query param handler. White flash on reload eliminated by patching Streamlit's `index.html` with an inline dark background style at startup. Objective cards polished: larger images, purple quantity colour, first card open by default.
+
+### Phase 3
+
+⚡ Full Buildings tab delivered: `list_buildings()`, `get_building_unlock()`, `get_upgrade_chain()` exported from `data.py`. PRODUCTION inner tab: AgGrid with icon/name/category/power/tier columns, floating filter, row-click building detail card. UPGRADES inner tab: neon sub-tabs per progression group (Miners, Conveyors, Pipelines, Storage), horizontal Mk-tier card row, detail panel with unlock cost chips and Prev/Next navigation. All 477 building images scraped and cached at 64px + 512px via `WIKI_NAME_OVERRIDES` dict (0 failures). Two polish fixes: `local_image_url()` leading-slash bug (broke AgGrid image paths), card header `border-radius` removed (eliminated sub-pixel corner glitch). BUILDINGS floating filter moved above column headers via DOM reorder in `onFirstDataRendered` JS. CRT exit transition remains parked.
 
 ---

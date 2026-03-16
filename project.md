@@ -37,6 +37,7 @@
 - **Display:** Grayscale DC display. High-contrast black/white/gray palette only. All color decisions assume zero color rendering. (Full colour option is a future phase.)
 - **Deployment (Phase 1):** Local machine, runs alongside the game. Launched manually via `cmd`. Auto-reloads on file save (`--server.runOnSave=true`).
 - **Deployment (Phase N):** [Stlite](https://github.com/whitphx/stlite) — runs Streamlit entirely in the browser via WebAssembly (Pyodide). No server, no backend. Deployable as static files to GitHub Pages. Goal is a zero-install companion accessible from any device, including in-game overlay via browser.
+- **Deployment (live):** [Streamlit Community Cloud](https://ultra-satisfactory.streamlit.app/) — full server-side Streamlit, auto-deploys from `main` on push. GitHub Pages stlite build also live at `https://lukexyz.github.io/ULTRA-SATISFACTORY/`.
 
 
 

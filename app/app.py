@@ -90,10 +90,10 @@ def recipe_card(result: dict) -> str:
             background: rgba(255,255,255,0.10);
         }}
     </style>
-    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #e8d44d;
+    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:none;
                 border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
                 color:#eee;overflow:hidden;max-width:820px;
-                box-shadow:0 0 15px #e8d44d44, 0 0 30px #e8d44d22;">
+                box-shadow:inset 0 0 0 1px #e8d44d, 0 0 15px #e8d44d44, 0 0 30px #e8d44d22;">
       <div style="background:linear-gradient(90deg,#e8d44d,#d4a017);padding:8px 16px;
                   display:flex;align-items:center;gap:12px;">
         <img src="{img}" width="48" height="48"
@@ -172,10 +172,10 @@ def building_card(bld: dict) -> str:
     desc_snippet = (description[:160] + '…') if len(description) > 160 else description
 
     return f'''
-    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #38bdf8;
+    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:none;
                 border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
                 color:#eee;overflow:hidden;max-width:820px;
-                box-shadow:0 0 15px #38bdf844, 0 0 30px #38bdf822;">
+                box-shadow:inset 0 0 0 1px #38bdf8, 0 0 15px #38bdf844, 0 0 30px #38bdf822;">
       <!-- Header bar (blue theme for buildings) -->
       <div style="background:linear-gradient(90deg,#0ea5e9,#0284c7);padding:8px 16px;
                   display:flex;align-items:center;gap:12px;">
@@ -189,7 +189,7 @@ def building_card(bld: dict) -> str:
       <!-- Body -->
       <div style="padding:10px 16px 4px 16px;">
         {f'<div style="font-size:0.82em;color:#aaa;margin-bottom:8px;line-height:1.5;">{desc_snippet}</div>' if desc_snippet else ''}
-        <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;border-collapse:separate;border-spacing:0;">
           <tr>
             <td style="padding:6px 8px;border-top:1px solid #1e293b;width:50%;vertical-align:top;">
               <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Power</div>
@@ -899,6 +899,8 @@ with tab_items:
                 };
                 firstFilter.appendChild(btn);
             }
+            var filterInput = wrapper.querySelector('.ag-floating-filter-input input');
+            if (filterInput) filterInput.setAttribute('placeholder', 'Search items...');
         }, 200);
     }
     """)
@@ -1174,6 +1176,8 @@ function(params) {
             };
             firstFilter.appendChild(btn);
         }
+        var filterInput = wrapper.querySelector('.ag-floating-filter-input input');
+        if (filterInput) filterInput.setAttribute('placeholder', 'Search buildings...');
     }, 200);
 }
 """)

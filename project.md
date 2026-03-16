@@ -73,13 +73,20 @@
 - ⚡ **Query param handler must run before `st.tabs()`:** reading `st.query_params.get("item")` inside a `with tab_items:` block is too late — Streamlit has already decided which tab is active. The handler must run at module level before `st.tabs()` so `default=` can be set correctly.
 - ⚡ **`st.html(unsafe_allow_javascript=True)` runs in main page:** not iframed, JS executes directly in Streamlit's document. Attempted `pushState` + `dispatchEvent(new PopStateEvent('popstate'))` to trigger reruns without a full page reload — works in isolation but unreliable in practice for Streamlit navigation. Abandoned in favour of patching `index.html`.
 - ⚡ **Streamlit `index.html` white flash:** `config.toml` `backgroundColor` and all CSS injected via `st.markdown` are applied by React after the JS bundle loads — useless for the initial browser paint. The only fix is patching Streamlit's `index.html` directly, adding `<style>html,body{background:#000!important}</style>` + `<meta name="color-scheme" content="dark">` as the first elements inside `<head>`. A self-healing `_patch_streamlit_index()` function runs at app startup to re-apply the patch after `pip upgrade streamlit`.
+- ⚡ **Streamlit static file serving:** requires `[server] enableStaticServing = true` in `.streamlit/config.toml`. Files in `app/static/` (sibling to `app.py`) are served at `http://localhost:8501/app/static/filename.png`. Available since Streamlit 1.18.0; project uses 1.55.0.
+- ⚡ **`image_slug()` function:** converts item names to wiki-compatible file slugs — spaces→underscores, apostrophes→underscores, colons→underscores. Used for both local file paths and wiki.gg URLs.
+- ⚡ **Wiki image URL encoding:** non-ASCII characters in item names (e.g. ™ trademark symbol) break `urllib.request`. Must use `urllib.parse.quote(slug, safe="_")` to encode URLs. Windows cmd can't print `⚡` emoji — use ASCII alternatives in print statements.
+- ⚡ **Two-size image architecture:** 64px for thumbnails/chips/grid, 256px for hero/objective cards. Directory structure: `app/static/images/64/{slug}.png` and `app/static/images/256/{slug}.png`. `local_image_url(name, size)` picks the smallest cached size >= requested size, falls back to wiki.gg.
+- ⚡ **Image download results:** 135/140 items downloaded successfully at both sizes. 5 failures (Factory Cart™, Golden Factory Cart™, Hover Pack, Non-fissile Uranium, Screw) — wiki URL mismatches or 404s. None in critical recipe chains.
+- ⚡ **Stlite filesystem constraint:** no actual filesystem at runtime. All files must be declared upfront in the `files:` option or loaded via `archives: [{ url: "./images.zip", format: "zip" }]`. Images must be committed to the repo (~2MB) for GitHub Pages to serve them.
+- ⚡ **`__pycache__` stale after nbdev_export:** after `nbdev_export` regenerates `data.py`, stale `.pyc` files in `ultra_satisfactory/__pycache__/` can cause `ImportError` for newly exported functions. Must delete the cache directory after export.
 
 ---
 
 ## Decisions
 
 - ⚡ **Data source:** `greeny/SatisfactoryTools` `data.json` — most complete, community-maintained, no scraping required.
-- ⚡ **Images:** reference wiki.gg image URLs directly — no need to host images locally or in S3.
+- ⚡ **Images:** local image cache at two sizes (64px, 256px) served via Streamlit static serving. Falls back to wiki.gg for uncached items. Images committed to repo for stlite compatibility.
 - ⚡ **Asset hosting:** `data.json` committed to `data/` in the repo — simple, version-controlled, zero infrastructure.
 - ⚡ **Phase 1 deployment:** local Streamlit only. Stlite/GitHub Pages deferred to a later phase.
 - ⚡ **Chip navigation:** `<a href="?item=Name">` anchor tags inside `st.markdown` — native browser links, not stripped by DOMPurify. Full page reload is unavoidable; mitigated by patching `index.html` for a dark background and a CSS fade-in animation on load.
@@ -181,7 +188,7 @@ _Rules for how the AI operates on this project. Applied every session._
 4. ☐ **Buildings tab — UPGRADES inner tab** — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
    - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
 
-5. ☐ **Image cache — local static serving** — download all 152 item images from wiki.gg (64px) once to `app/static/images/`. Add `enableStaticServing = true` to `.streamlit/config.toml`. Add `local_image_url(name, fallback_size=64)` to `data.py` — returns `/app/static/images/{slug}.png` if file exists, falls back to `wiki_image_url`. Swap all call sites in `app.py` and `data.py`. Images committed to repo (~2MB) for stlite/GitHub Pages compatibility. Run script noted in `project.md` as a one-time setup step.
+5. ☑ <span style="color: purple">**Image cache — local static serving**</span> — 135/140 item images downloaded at two sizes (64px thumbnails, 256px hero cards) to `app/static/images/{size}/`. `local_image_url(name, size=64)` picks smallest cached size >= requested, falls back to wiki.gg. `enableStaticServing = true` in config.toml. All call sites swapped in `app.py` and `data.py`. 5 failures (Factory Cart™, Golden Factory Cart™, Hover Pack, Non-fissile Uranium, Screw) — none in critical recipe chains. ~2MB committed to repo for stlite/GitHub Pages compatibility.
    - Stlite note: images committed to repo are served as static assets by GitHub Pages. When deploying to stlite, mount via `archives: [{ url: "./app/static/images.zip", format: "zip" }]` in the HTML wrapper.
 
 6. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.

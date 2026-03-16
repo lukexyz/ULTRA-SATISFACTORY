@@ -8,19 +8,47 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock, get_upgrade_chain, get_building_produces
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
-# ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
-# Injects inline dark background + color-scheme meta into <head> before any
-# JS/CSS loads. Idempotent — skips if already patched. Re-applies after upgrades.
+# ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload
+# and force all links to navigate in-place (never open new tabs).
+# Injects inline dark background + color-scheme meta + MutationObserver into
+# <head> before any JS/CSS loads. Idempotent — skips if already patched.
+# Re-applies after upgrades.
 def _patch_streamlit_index():
-    _INJECT = '<meta name="color-scheme" content="dark"><style>html,body{background:#000!important}</style>'
+    _INJECT_DARK = '<meta name="color-scheme" content="dark"><style>html,body{background:#000!important}</style>'
+    # ⚡ MutationObserver: Streamlit's DOMPurify injects target="_blank" on all
+    # <a> tags. This script watches the DOM and flips any _blank to _self so
+    # chip navigation always reloads in-place instead of opening a new tab.
+    _INJECT_LINK_FIX = (
+        '<script>'
+        '(function(){'
+        'var o=new MutationObserver(function(m){'
+        'm.forEach(function(r){'
+        'r.addedNodes.forEach(function(n){'
+        'if(n.querySelectorAll){'
+        'n.querySelectorAll("a[target=_blank]").forEach(function(a){'
+        'var h=a.getAttribute("href")||"";'
+        'if(h.indexOf("?item=")===0||h.indexOf("?building=")===0||h.indexOf("?phase=")===0)'
+        '{a.setAttribute("target","_self")}'
+        '})}'
+        '})})});'
+        'o.observe(document.documentElement,{childList:true,subtree:true})'
+        '})()'
+        '</script>'
+    )
     index = Path(st.__file__).parent / "static" / "index.html"
     try:
         html = index.read_text()
-        if _INJECT not in html:
-            html = html.replace("<head>\n", f"<head>\n    {_INJECT}\n", 1)
+        changed = False
+        if _INJECT_DARK not in html:
+            html = html.replace("<head>\n", f"<head>\n    {_INJECT_DARK}\n", 1)
+            changed = True
+        if _INJECT_LINK_FIX not in html:
+            html = html.replace("</head>", f"    {_INJECT_LINK_FIX}\n</head>", 1)
+            changed = True
+        if changed:
             index.write_text(html)
     except Exception:
-        pass  # non-fatal — worst case is the old white flash
+        pass  # non-fatal — worst case is the old white flash / new-tab links
 _patch_streamlit_index()
 
 st.set_page_config(
@@ -100,7 +128,7 @@ def recipe_card(result: dict) -> str:
             e_img = local_image_url(e['name'])
             e_name_encoded = e['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
-                f'<a class="recipe-chip" href="?item={e_name_encoded}">'
+                f'<a class="recipe-chip" href="?item={e_name_encoded}" target="_self">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
                 f'style="border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
@@ -158,7 +186,7 @@ def recipe_card(result: dict) -> str:
             {item_cell(result['ingredients'])}
           </td>
           <td style="padding:10px 12px;text-align:center;vertical-align:middle;border-right:1px solid #222;">
-            <a href="?building={machine_encoded}"
+            <a href="?building={machine_encoded}" target="_self"
                style="display:inline-flex;flex-direction:column;align-items:center;gap:6px;
                       text-decoration:none;color:inherit;"
                title="View in Buildings">
@@ -201,7 +229,7 @@ def building_card(bld: dict) -> str:
             img_url = local_image_url(c['name'])
             encoded = c['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
-                f'<a class="recipe-chip" href="?item={encoded}">'
+                f'<a class="recipe-chip" href="?item={encoded}" target="_self">'
                 f'<img src="{img_url}" width="28" height="28" '
                 f'style="border-radius:3px;border:1px solid #444;background:#111;">'
                 f'<span style="font-size:0.82em;color:#ccc;">'
@@ -236,7 +264,7 @@ def building_card(bld: dict) -> str:
                 img_url = local_image_url(p['name'])
                 encoded = p['name'].replace(' ', '%20').replace("'", "%27")
                 chips_html.append(
-                    f'<a class="recipe-chip" href="?item={encoded}">'
+                    f'<a class="recipe-chip" href="?item={encoded}" target="_self">'
                     f'<img src="{img_url}" width="28" height="28" '
                     f'style="border-radius:3px;border:1px solid #444;background:#111;">'
                     f'<span style="font-size:0.82em;color:#ccc;">{p["name"]}</span></a>'

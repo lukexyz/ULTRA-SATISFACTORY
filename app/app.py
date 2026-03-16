@@ -618,6 +618,8 @@ if "selected_item" not in st.session_state:
     st.session_state.selected_item = None  # ⚡ default: no selection — ghost placeholder shown
 if "chip_item" not in st.session_state:
     st.session_state.chip_item = None
+if "chip_building" not in st.session_state:
+    st.session_state.chip_building = None
 
 # ⚡ Query param handler: clicking a recipe chip sets ?item=Name
 # Must run BEFORE st.tabs() so we can set the default tab to ITEMS
@@ -626,8 +628,14 @@ if _queried_item:
     st.session_state.chip_item = _queried_item
     st.query_params.clear()
 
+# ⚡ Query param handler: hotlinks set ?building=Name → jump to BUILDINGS tab
+_queried_building = st.query_params.get("building")
+if _queried_building:
+    st.session_state.chip_building = _queried_building
+    st.query_params.clear()
+
 # --- TABS ---
-_default_tab = "ITEMS" if _queried_item else None
+_default_tab = "ITEMS" if _queried_item else ("BUILDINGS" if _queried_building else None)
 tab_objectives, tab_items, tab_buildings = st.tabs(
     ["OBJECTIVES", "ITEMS", "BUILDINGS"], default=_default_tab
 )
@@ -1194,52 +1202,14 @@ with tab_buildings:
     # ----------------------------------------------------------------
     with bld_tab_prod:
 
-        # ⚡ Category filter state — default "All"
-        if "bld_category" not in st.session_state:
-            st.session_state.bld_category = "All"
-
-        # ⚡ Category pill buttons — one per category in a single row of columns
-        # NOTE: these use st.button which causes a Python rerun on click; the grid
-        # re-filters server-side. If this causes awkward page-load jank (same issue
-        # as chip navigation) we'll switch to st.radio(horizontal=True).
-        pill_cols = st.columns(len(_BLD_CATEGORIES), gap="small")
-        for i, cat in enumerate(_BLD_CATEGORIES):
-            with pill_cols[i]:
-                is_active = st.session_state.bld_category == cat
-                # Active pill: blue glow; inactive: dim
-                btn_style = (
-                    "background:rgba(56,189,248,0.18);border:1px solid #38bdf8;"
-                    "color:#e0f2fe;box-shadow:0 0 8px #38bdf844;"
-                    if is_active else
-                    "background:transparent;border:1px solid #222;color:#444;"
-                )
-                st.markdown(
-                    f'<style>.pill-{i}>button{{font-family:"Share Tech Mono",monospace!important;'
-                    f'font-size:0.65rem!important;letter-spacing:0.1em!important;'
-                    f'padding:3px 6px!important;height:auto!important;min-height:0!important;'
-                    f'width:100%!important;{btn_style}border-radius:6px!important;'
-                    f'transition:all 0.15s!important;}}</style>'
-                    f'<div class="pill-{i}">',
-                    unsafe_allow_html=True,
-                )
-                if st.button(cat.upper(), key=f"bld_pill_{cat}", use_container_width=True):
-                    st.session_state.bld_category = cat
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # ⚡ Build filtered building list
+        # ⚡ All buildings — no category filtering, search via AgGrid floating filter
         all_buildings = list_buildings(data)
-        selected_cat = st.session_state.bld_category
-        if selected_cat == "All":
-            filtered = all_buildings
-        else:
-            filtered = [b for b in all_buildings if b["category"] == selected_cat.lower()]
 
         # ⚡ Count label
         st.markdown(
             f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;'
             f'color:#38bdf866;text-align:right;margin-bottom:4px;letter-spacing:0.1em;">'
-            f'{len(filtered)} BUILDINGS</div>',
+            f'{len(all_buildings)} BUILDINGS</div>',
             unsafe_allow_html=True,
         )
 
@@ -1252,7 +1222,7 @@ with tab_buildings:
                 "power": b["power_mw"],
                 "tier": b["tier"] if b["tier"] is not None else "",
             }
-            for b in filtered
+            for b in all_buildings
         ])
 
         # ⚡ Grid options
@@ -1336,8 +1306,14 @@ with tab_buildings:
         if bld_selected_rows is not None:
             if isinstance(bld_selected_rows, pd.DataFrame) and len(bld_selected_rows) > 0:
                 bld_selected_name = bld_selected_rows.iloc[0]["name"]
+                st.session_state.chip_building = None  # grid click overrides hotlink
             elif isinstance(bld_selected_rows, list) and len(bld_selected_rows) > 0:
                 bld_selected_name = bld_selected_rows[0]["name"]
+                st.session_state.chip_building = None
+
+        # Hotlink via ?building= takes effect if nothing clicked in grid
+        if not bld_selected_name and st.session_state.chip_building:
+            bld_selected_name = st.session_state.chip_building
 
         if bld_selected_name:
             bld_detail = next(

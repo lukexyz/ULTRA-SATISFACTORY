@@ -68,6 +68,15 @@ SPACE_ELEVATOR_PHASES = {
     ],
 }
 
+# ⚡ Concise one-line descriptions for each Space Elevator phase
+PHASE_DESCRIPTIONS = {
+    1: "Automation basics",
+    2: "Logistics & steel",
+    3: "Oil & computers",
+    4: "Nuclear & endgame",
+    5: "Alien tech & quantum",
+}
+
 # ⚡ Default to phase stored in session state (set by selector in tab)
 if "selected_phase" not in st.session_state:
     st.session_state.selected_phase = 3
@@ -675,6 +684,18 @@ if _queried_building:
     st.session_state.chip_building = _queried_building
     st.query_params.clear()
 
+# ⚡ Query param handler: phase pill clicks set ?phase=N → update selected phase
+_queried_phase = st.query_params.get("phase")
+if _queried_phase:
+    try:
+        _phase_val = int(_queried_phase)
+        if _phase_val in SPACE_ELEVATOR_PHASES:
+            st.session_state.selected_phase = _phase_val
+            st.session_state.selected_item = None
+    except ValueError:
+        pass
+    st.query_params.clear()
+
 # --- TABS ---
 _default_tab = "ITEMS" if _queried_item else ("BUILDINGS" if _queried_building else None)
 tab_objectives, tab_items, tab_buildings = st.tabs(
@@ -685,26 +706,95 @@ tab_objectives, tab_items, tab_buildings = st.tabs(
 # TAB 1 — OBJECTIVES
 # ================================================================
 with tab_objectives:
-    # ⚡ Phase selector
-    phase_col, _ = st.columns([2, 3])
-    with phase_col:
-        selected = st.selectbox(
-            "Space Elevator Phase",
-            options=[1, 2, 3, 4, 5],
-            index=st.session_state.selected_phase - 1,
-            format_func=lambda x: f"Phase {x}",
-            key="phase_selector",
-            label_visibility="collapsed",
-        )
-        if selected != st.session_state.selected_phase:
-            st.session_state.selected_phase = selected
-            st.session_state.selected_item = None
-            st.rerun()
 
     OBJECTIVES = SPACE_ELEVATOR_PHASES[st.session_state.selected_phase]
+    _active = st.session_state.selected_phase
 
-    st.markdown(f'<div class="section-title">// SPACE ELEVATOR &mdash; PHASE {st.session_state.selected_phase} //</div>',
-                unsafe_allow_html=True)
+    # ⚡ Build phase pill strip HTML
+    def _phase_pill(phase_num: int, active: bool) -> str:
+        items = SPACE_ELEVATOR_PHASES[phase_num]
+        desc  = PHASE_DESCRIPTIONS[phase_num]
+
+        # Thumbnail row
+        thumbs_html = ''.join(
+            f'<img src="{local_image_url(it["name"], 64)}" width="24" height="24" '
+            f'style="border-radius:3px;border:1px solid #333;background:#111;'
+            f'object-fit:contain;">'
+            for it in items
+        )
+
+        if active:
+            # ⚡ Expanded active pill: gold border + glow, description + item list
+            items_html = ''.join(
+                f'<div style="display:flex;align-items:center;gap:5px;'
+                f'justify-content:center;white-space:nowrap;">'
+                f'<span style="color:#e8d44d;font-weight:700;">{it["required"]:,}&times;</span>'
+                f'<span style="color:#aaa;">{it["name"]}</span>'
+                f'</div>'
+                for it in items
+            )
+            return (
+                f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;'
+                f'padding:8px 14px;border:1px solid #e8d44d;border-radius:8px;'
+                f'background:#0f0f23;box-shadow:0 0 14px #e8d44d33,0 0 28px #e8d44d11;'
+                f'min-width:120px;cursor:default;">'
+                f'<div style="width:22px;height:22px;border-radius:50%;background:#e8d44d;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-family:\'Share Tech Mono\',monospace;font-size:0.72rem;'
+                f'font-weight:700;color:#000;">{phase_num}</div>'
+                f'<div style="display:flex;gap:3px;justify-content:center;">{thumbs_html}</div>'
+                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.6rem;'
+                f'color:#e8d44d99;letter-spacing:0.12em;text-transform:uppercase;">{desc}</div>'
+                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.62rem;'
+                f'display:flex;flex-direction:column;gap:1px;align-items:center;">'
+                f'{items_html}</div>'
+                f'</div>'
+            )
+        else:
+            # ⚡ Compact inactive pill: dim border, just number + thumbnails
+            return (
+                f'<a href="?phase={phase_num}" style="text-decoration:none;">'
+                f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;'
+                f'padding:8px 10px;border:1px solid #2a2a3a;border-radius:8px;'
+                f'background:#0a0a1a;min-width:60px;cursor:pointer;'
+                f'transition:border-color 0.15s,background 0.15s;">'
+                f'<div style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-family:\'Share Tech Mono\',monospace;font-size:0.68rem;'
+                f'font-weight:700;color:#666;">{phase_num}</div>'
+                f'<div style="display:flex;gap:3px;justify-content:center;opacity:0.6;">{thumbs_html}</div>'
+                f'</div>'
+                f'</a>'
+            )
+
+    _pills = []
+    for p in range(1, 6):
+        _pills.append(_phase_pill(p, p == _active))
+        if p < 5:
+            _pills.append(
+                '<div style="color:#2a2a3a;font-size:1.1rem;padding:0 4px;'
+                'align-self:center;">&#9656;</div>'
+            )
+
+    _pill_strip = (
+        '<div style="display:flex;align-items:center;justify-content:center;'
+        'flex-wrap:nowrap;gap:0;margin:8px auto 12px auto;">'
+        + ''.join(_pills)
+        + '</div>'
+    )
+    st.markdown(_pill_strip, unsafe_allow_html=True)
+
+    st.markdown(
+        f'<div class="section-title" style="text-align:center;">'
+        f'// SPACE ELEVATOR &mdash; PHASE {_active} //'
+        f'</div>'
+        f'<div style="text-align:center;font-family:\'Share Tech Mono\',monospace;'
+        f'font-size:0.65rem;color:#555;letter-spacing:0.2em;text-transform:uppercase;'
+        f'margin-top:-6px;margin-bottom:10px;">'
+        f'{PHASE_DESCRIPTIONS[_active]}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     cols = st.columns(len(OBJECTIVES), gap="medium")
 
@@ -1149,23 +1239,22 @@ _bld_aggrid_css = {
         "border": "none !important",
         "font-family": "'Share Tech Mono', monospace !important",
     },
+    # ⚡ Header row is hidden (headerHeight=0) — zero out all rendering
     ".ag-header": {
-        "background-color": "#0a0a1a !important",
-        "border-bottom": "1px solid #1e293b !important",
-    },
-    ".ag-header-cell-label": {
-        "color": "#38bdf8 !important",
-        "font-family": "'Share Tech Mono', monospace !important",
-        "font-size": "0.72rem !important",
-        "letter-spacing": "0.15em !important",
-        "text-transform": "uppercase !important",
-    },
-    ".ag-header-row-floating-filter": {
-        "border-bottom": "1px solid #1e293b !important",
-    },
-    ".ag-floating-filter": {
         "background-color": "#000000 !important",
         "border-bottom": "none !important",
+    },
+    # ⚡ Kill column resize handles — the source of white dot pixel glitches
+    ".ag-header-cell-resize": {
+        "display": "none !important",
+    },
+    ".ag-header-cell-resize::after": {
+        "display": "none !important",
+    },
+    # Floating filter bar — sits at top, acts as the search row
+    ".ag-floating-filter": {
+        "background-color": "#000000 !important",
+        "border-bottom": "1px solid #222222 !important",
     },
     ".ag-floating-filter-input": {
         "background-color": "#111111 !important",
@@ -1216,7 +1305,6 @@ _bld_aggrid_css = {
 }
 
 # ⚡ onFirstDataRendered JS — deselect on filter change + "clear" button in icon col
-# ⚡ Also moves the floating filter row above the column headers in the DOM
 _bld_on_ready_js = JsCode("""
 function(params) {
     params.api.addEventListener('filterChanged', function() {
@@ -1225,15 +1313,6 @@ function(params) {
     setTimeout(function() {
         var wrapper = document.querySelector('.ag-root-wrapper');
         if (!wrapper) return;
-
-        // ⚡ Move floating filter row above the column header row
-        var headerRoot = wrapper.querySelector('.ag-header-root');
-        if (!headerRoot) headerRoot = wrapper.querySelector('.ag-header');
-        var floatingRow = wrapper.querySelector('.ag-header-row-floating-filter');
-        var colHeaderRow = wrapper.querySelector('.ag-header-row-column');
-        if (floatingRow && colHeaderRow && floatingRow.parentNode === colHeaderRow.parentNode) {
-            floatingRow.parentNode.insertBefore(floatingRow, colHeaderRow);
-        }
 
         // ⚡ Replace icon-column floating filter cell with a "clear" button
         var firstFilter = wrapper.querySelector('.ag-floating-filter');
@@ -1349,7 +1428,7 @@ with tab_buildings:
         gb_bld.configure_selection(selection_mode="single", use_checkbox=False)
         gb_bld.configure_grid_options(
             rowHeight=52,
-            headerHeight=32,
+            headerHeight=0,
             floatingFiltersHeight=40,
             suppressHorizontalScroll=True,
             suppressCellFocus=True,
@@ -1362,6 +1441,22 @@ with tab_buildings:
 
         # ⚡ Placeholder for detail card — sits ABOVE the grid
         bld_placeholder = st.empty()
+
+        # ⚡ Fake column header row — replaces AgGrid native header (headerHeight=0)
+        # Mirrors column widths: icon col is 60px (no label), then flex BUILDING,
+        # 110px CATEGORY, 120px POWER (MW), 70px TIER
+        st.markdown("""
+        <div style="display:flex;align-items:center;background:#0a0a1a;
+                    padding:0 0 0 60px;border-bottom:1px solid #1e293b;
+                    font-family:'Share Tech Mono',monospace;font-size:0.72rem;
+                    letter-spacing:0.15em;color:#38bdf8;text-transform:uppercase;
+                    margin-bottom:-16px;">
+          <div style="flex:2;padding:8px 12px;">Building</div>
+          <div style="width:110px;padding:8px 12px;">Category</div>
+          <div style="width:120px;padding:8px 12px;text-align:right;">Power (MW)</div>
+          <div style="width:70px;padding:8px 12px;text-align:right;">Tier</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # ⚡ Render the grid
         bld_grid_response = AgGrid(

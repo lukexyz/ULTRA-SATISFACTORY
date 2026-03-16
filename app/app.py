@@ -1340,9 +1340,6 @@ with tab_buildings:
             {
                 "icon": b["image_url"],
                 "name": b["name"],
-                "category": b["category"].capitalize(),
-                "power": b["power_mw"],
-                "tier": b["tier"] if b["tier"] is not None else "",
             }
             for b in all_buildings
         ])
@@ -1365,33 +1362,6 @@ with tab_buildings:
                 maxNumConditions: 1,
             }"""),
             flex=2, suppressMovable=True,
-        )
-        gb_bld.configure_column(
-            field="category", header_name="CATEGORY",
-            sortable=True, filter=False, width=110, suppressMovable=True,
-        )
-        gb_bld.configure_column(
-            field="power", header_name="POWER (MW)",
-            sortable=True, filter=False, width=120, suppressMovable=True,
-            type=["numericColumn", "rightAligned"],
-            valueFormatter=JsCode("""
-            function(params) {
-                if (params.value === 0 || params.value === '' || params.value == null) return '—';
-                if (params.value < 0) return '+' + Math.abs(params.value).toFixed(0);
-                return params.value.toFixed(0);
-            }
-            """),
-        )
-        gb_bld.configure_column(
-            field="tier", header_name="TIER",
-            sortable=True, filter=False, width=70, suppressMovable=True,
-            type=["numericColumn", "rightAligned"],
-            valueFormatter=JsCode("""
-            function(params) {
-                if (params.value === '' || params.value == null) return '—';
-                return 'T' + params.value;
-            }
-            """),
         )
 
         gb_bld.configure_selection(selection_mode="single", use_checkbox=False)

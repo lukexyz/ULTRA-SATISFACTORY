@@ -184,20 +184,11 @@ def building_card(bld: dict) -> str:
     name = bld['name']
     img = bld['image_url_large']
     category = bld['category'].upper()
-    power_mw = bld['power_mw']
     tier = bld['tier']
     unlock_name = bld['unlock_name'] or '—'
     description = bld['description']
     cost = bld['cost']  # list of {name, amount}
     produces = bld.get('produces', [])  # list of {name, class_key}
-
-    # Power display: negative = generator (produces), positive = consumer, 0 = no power
-    if power_mw < 0:
-        power_str = f'<span style="color:#4ade80;">+{abs(power_mw):.0f} MW</span> <span style="color:#666;font-size:0.78em;">(generates)</span>'
-    elif power_mw > 0:
-        power_str = f'<span style="color:#7ec8e3;">{power_mw:.0f} MW</span>'
-    else:
-        power_str = '<span style="color:#555;">—</span>'
 
     tier_str = f'Tier {tier}' if tier is not None else '—'
 
@@ -219,7 +210,7 @@ def building_card(bld: dict) -> str:
             )
         return ''.join(parts)
 
-     # Produces chips — navigable links to ITEMS tab, grouped by tier label
+    # Produces chips — navigable links to ITEMS tab, grouped by tier label
     def produces_chips(produces_list):
         if not produces_list:
             return '<span style="color:#555;font-size:0.82em;">—</span>'
@@ -250,8 +241,17 @@ def building_card(bld: dict) -> str:
                     f'style="border-radius:3px;border:1px solid #444;background:#111;">'
                     f'<span style="font-size:0.82em;color:#ccc;">{p["name"]}</span></a>'
                 )
-            tier_label_html = f'<span style="font-size:0.65em;color:#38bdf844;letter-spacing:0.1em;font-family:\'Share Tech Mono\',monospace;margin-right:8px;min-width:24px;display:inline-block;">{tier}</span>'
-            row_html = f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #1e293b;">{tier_label_html}{"".join(chips_html)}</div>'
+            tier_label_html = (
+                f'<span style="font-size:0.66em;color:#38bdf855;letter-spacing:0.1em;'
+                f'font-family:\'Share Tech Mono\',monospace;min-width:34px;text-align:right;'
+                f'padding-right:8px;margin-right:8px;border-right:1px solid #38bdf826;line-height:1.9;">{tier}</span>'
+            )
+            row_html = (
+                f'<div style="display:flex;align-items:flex-start;gap:0;margin-bottom:6px;">'
+                f'{tier_label_html}'
+                f'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">{"".join(chips_html)}</div>'
+                f'</div>'
+            )
             rows.append(row_html)
         
         return ''.join(rows)

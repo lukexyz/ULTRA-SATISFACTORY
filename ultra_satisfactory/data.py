@@ -420,49 +420,20 @@ def get_building_produces(class_key: str, data: dict) -> list[dict]:
     resources = data.get("resources", {})
     schematics = data.get("schematics", {})
 
-    # Build a reverse-lookup: item_class_key -> earliest non-alternate unlock schematic
-    item_unlock = {}
-    for sch in schematics.values():
-        unlock_recipes = sch.get("unlock", {}).get("recipes", [])
-        for rk in unlock_recipes:
-            recipe = recipes.get(rk, {})
-            # Skip building recipes and alternate recipes for primary lookup
-            if recipe.get("forBuilding"):
-                continue
-            recipe_is_alt = recipe.get("alternate", False)
-            for prod in recipe.get("products", []):
-                ik = prod["item"]
-                if ik not in item_unlock:
-                    item_unlock[ik] = (sch, recipe_is_alt)
-                else:
-                    # Prefer non-alternate schematics, or lower tier if both are same type
-                    existing_sch, existing_is_alt = item_unlock[ik]
-                    sch_tier = sch.get("tier", 999)
-                    existing_tier = existing_sch.get("tier", 999)
-                    # Prefer non-alternate, then lower tier
-                    if recipe_is_alt and not existing_is_alt:
-                        continue  # Keep existing non-alternate
-                    if sch_tier < existing_tier:
-                        item_unlock[ik] = (sch, recipe_is_alt)
-
-    def _tier_label(item_key: str, recipe_is_alt: bool) -> str:
-        """Derive a tier label (T0–T8, MAM, ALT, SHOP) for an item."""
-        if item_key not in item_unlock:
-            return "T0"  # Fallback
-        sch, _ = item_unlock[item_key]
+    def _label_from_unlock(sch: dict, recipe: dict) -> str:
+        """Derive a tier label from one schematic+recipe unlock pair."""
         sch_type = sch.get("type", "")
         sch_tier = sch.get("tier", 0)
         is_mam = sch.get("mam", False)
         is_alternate = sch.get("alternate", False)
-        
-        # Check if recipe itself is alternate (Hard Drive, etc.)
+        recipe_is_alt = recipe.get("alternate", False)
+
         if recipe_is_alt or is_alternate or sch_type in ("EST_Alternate", "EST_HardDrive"):
             return "ALT"
         if is_mam or sch_type == "EST_MAM":
             return "MAM"
         if sch_type == "EST_ResourceSink":
             return "SHOP"
-        # Tutorial, Milestone, Custom all use tier number
         return f"T{sch_tier}"
 
     # Tier sort order
@@ -470,6 +441,29 @@ def get_building_produces(class_key: str, data: dict) -> list[dict]:
         "T0": 0, "T1": 1, "T2": 2, "T3": 3, "T4": 4, "T5": 5, "T6": 6, "T7": 7, "T8": 8,
         "MAM": 9, "ALT": 10, "SHOP": 11
     }
+
+    # Build a reverse-lookup: item_class_key -> best unlock label
+    # Preference: earliest non-ALT unlock, then global tier label order.
+    item_label = {}
+    for sch in schematics.values():
+        unlock_recipes = sch.get("unlock", {}).get("recipes", [])
+        for rk in unlock_recipes:
+            recipe = recipes.get(rk, {})
+            if recipe.get("forBuilding"):
+                continue
+            label = _label_from_unlock(sch, recipe)
+            label_rank = tier_order.get(label, 99)
+            is_alt = label == "ALT"
+            for prod in recipe.get("products", []):
+                ik = prod["item"]
+                if ik not in item_label:
+                    item_label[ik] = (is_alt, label_rank, label)
+                    continue
+                prev_is_alt, prev_rank, _ = item_label[ik]
+                if prev_is_alt and not is_alt:
+                    item_label[ik] = (is_alt, label_rank, label)
+                elif prev_is_alt == is_alt and label_rank < prev_rank:
+                    item_label[ik] = (is_alt, label_rank, label)
 
     seen = set()
     result = []
@@ -480,7 +474,6 @@ def get_building_produces(class_key: str, data: dict) -> list[dict]:
             continue
         if class_key not in rv.get("producedIn", []):
             continue
-        recipe_is_alt = rv.get("alternate", False)
         for p in rv.get("products", []):
             ck = p["item"]
             if ck in seen:
@@ -488,7 +481,7 @@ def get_building_produces(class_key: str, data: dict) -> list[dict]:
             seen.add(ck)
             item_data = items.get(ck) or resources.get(ck, {})
             name = item_data.get("name", ck)
-            tier_label = _tier_label(ck, recipe_is_alt)
+            tier_label = item_label.get(ck, (False, 0, "T0"))[2]
             result.append({"name": name, "class_key": ck, "tier_label": tier_label})
 
     # Sort by tier_label order, then by name within tier
@@ -520,4 +513,3 @@ def get_upgrade_chain(name_prefix: str, data: dict) -> list[dict]:
             return 99
 
     return sorted(chain, key=mk_num)
-

@@ -93,7 +93,7 @@ def local_image_url(item_name: str, size: int = 64) -> str:
                 elif best is None:
                     best = s  # fallback to smaller if nothing bigger
         if best is not None:
-            return f'/app/static/images/{best}/{slug}.png'
+            return f'app/static/images/{best}/{slug}.png'
     return wiki_image_url(item_name, size)
 
 # %% ../nbs/00_data.ipynb #2444f397

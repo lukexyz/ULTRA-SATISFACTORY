@@ -36,12 +36,41 @@ def get_data():
 
 data = get_data()
 
-# Space Elevator Phase 3 objectives
-OBJECTIVES = [
-    {"name": "Versatile Framework",    "required": 2500},
-    {"name": "Modular Engine",         "required": 500},
-    {"name": "Adaptive Control Unit",  "required": 100},
-]
+# ⚡ Space Elevator objectives — all 5 phases
+SPACE_ELEVATOR_PHASES = {
+    1: [
+        {"name": "Smart Plating",           "required": 50},
+        {"name": "Versatile Framework",     "required": 100},
+        {"name": "Automated Wiring",        "required": 500},
+    ],
+    2: [
+        {"name": "Automated Wiring",        "required": 500},
+        {"name": "Modular Frame",           "required": 500},
+        {"name": "Smart Plating",           "required": 100},
+        {"name": "Versatile Framework",     "required": 500},
+    ],
+    3: [
+        {"name": "Versatile Framework",     "required": 2500},
+        {"name": "Modular Engine",          "required": 500},
+        {"name": "Adaptive Control Unit",   "required": 100},
+    ],
+    4: [
+        {"name": "Assembly Director System","required": 1000},
+        {"name": "Magnetic Field Generator","required": 500},
+        {"name": "Nuclear Pasta",           "required": 100},
+        {"name": "Thermal Propulsion Rocket","required": 25},
+    ],
+    5: [
+        {"name": "Biochemical Sculptor",    "required": 500},
+        {"name": "AI Expansion Server",     "required": 100},
+        {"name": "Neural-Quantum Processor","required": 100},
+        {"name": "Ballistic Warp Drive",    "required": 100},
+    ],
+}
+
+# ⚡ Default to phase stored in session state (set by selector in tab)
+if "selected_phase" not in st.session_state:
+    st.session_state.selected_phase = 3
 
 # --- RECIPE CARD FUNCTION (shared across tabs) ---
 def recipe_card(result: dict) -> str:
@@ -647,10 +676,28 @@ tab_objectives, tab_items, tab_buildings = st.tabs(
 # TAB 1 — OBJECTIVES
 # ================================================================
 with tab_objectives:
-    st.markdown('<div class="section-title">// SPACE ELEVATOR &mdash; PHASE 3 //</div>',
+    # ⚡ Phase selector
+    phase_col, _ = st.columns([2, 3])
+    with phase_col:
+        selected = st.selectbox(
+            "Space Elevator Phase",
+            options=[1, 2, 3, 4, 5],
+            index=st.session_state.selected_phase - 1,
+            format_func=lambda x: f"Phase {x}",
+            key="phase_selector",
+            label_visibility="collapsed",
+        )
+        if selected != st.session_state.selected_phase:
+            st.session_state.selected_phase = selected
+            st.session_state.selected_item = None
+            st.rerun()
+
+    OBJECTIVES = SPACE_ELEVATOR_PHASES[st.session_state.selected_phase]
+
+    st.markdown(f'<div class="section-title">// SPACE ELEVATOR &mdash; PHASE {st.session_state.selected_phase} //</div>',
                 unsafe_allow_html=True)
 
-    cols = st.columns(3, gap="medium")
+    cols = st.columns(len(OBJECTIVES), gap="medium")
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:

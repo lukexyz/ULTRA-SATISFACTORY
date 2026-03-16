@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items
+from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
@@ -125,6 +125,83 @@ def recipe_card(result: dict) -> str:
           </td>
         </tr>
       </table>
+    </div>'''
+
+
+# --- BUILDING CARD FUNCTION ---
+def building_card(bld: dict) -> str:
+    """Return an HTML building info card styled in gold/blue theme matching recipe_card()."""
+    name = bld['name']
+    img = bld['image_url_large']
+    category = bld['category'].upper()
+    power_mw = bld['power_mw']
+    tier = bld['tier']
+    unlock_name = bld['unlock_name'] or '—'
+    description = bld['description']
+    cost = bld['cost']  # list of {name, amount}
+
+    # Power display: negative = generator (produces), positive = consumer, 0 = no power
+    if power_mw < 0:
+        power_str = f'<span style="color:#4ade80;">+{abs(power_mw):.0f} MW</span> <span style="color:#666;font-size:0.78em;">(generates)</span>'
+    elif power_mw > 0:
+        power_str = f'<span style="color:#7ec8e3;">{power_mw:.0f} MW</span>'
+    else:
+        power_str = '<span style="color:#555;">—</span>'
+
+    tier_str = f'Tier {tier}' if tier is not None else '—'
+
+    # Build cost chips (plain spans, not navigable — buildings aren't items)
+    def cost_chips(cost_list):
+        if not cost_list:
+            return '<span style="color:#555;font-size:0.82em;">Free / Starting</span>'
+        parts = []
+        for c in cost_list:
+            img_url = local_image_url(c['name'])
+            parts.append(
+                f'<span style="display:inline-flex;align-items:center;gap:4px;'
+                f'margin:3px 5px;border-radius:6px;padding:2px 6px;'
+                f'background:rgba(255,255,255,0.06);border:1px solid #333;">'
+                f'<img src="{img_url}" width="28" height="28" '
+                f'style="border-radius:3px;border:1px solid #444;background:#111;">'
+                f'<span style="font-size:0.82em;color:#ccc;">'
+                f'<span style="color:#e8d44d;font-weight:600;">{int(c["amount"])}&times;</span> '
+                f'{c["name"]}</span></span>'
+            )
+        return ''.join(parts)
+
+    desc_snippet = (description[:160] + '…') if len(description) > 160 else description
+
+    return f'''
+    <div style="background:linear-gradient(135deg,#0f0f23,#1a1a2e);border:1px solid #38bdf8;
+                border-radius:10px;margin:12px 0;padding:0;font-family:Segoe UI,sans-serif;
+                color:#eee;overflow:hidden;max-width:820px;
+                box-shadow:0 0 15px #38bdf844, 0 0 30px #38bdf822;">
+      <!-- Header bar (blue theme for buildings) -->
+      <div style="background:linear-gradient(90deg,#0ea5e9,#0284c7);padding:8px 16px;
+                  display:flex;align-items:center;gap:12px;">
+        <img src="{img}" width="52" height="52"
+             style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;object-fit:contain;">
+        <div>
+          <div style="font-size:1.15em;font-weight:700;color:#fff;">{name}</div>
+          <div style="font-size:0.78em;color:#bae6fd;letter-spacing:0.1em;">{category} &bull; {tier_str} &bull; {unlock_name}</div>
+        </div>
+      </div>
+      <!-- Body -->
+      <div style="padding:10px 16px 4px 16px;">
+        {f'<div style="font-size:0.82em;color:#aaa;margin-bottom:8px;line-height:1.5;">{desc_snippet}</div>' if desc_snippet else ''}
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:6px 8px;border-top:1px solid #1e293b;width:50%;vertical-align:top;">
+              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Power</div>
+              <div style="font-size:0.95em;">{power_str}</div>
+            </td>
+            <td style="padding:6px 8px;border-top:1px solid #1e293b;border-left:1px solid #1e293b;width:50%;vertical-align:top;">
+              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Build Cost</div>
+              <div style="line-height:1.8;">{cost_chips(cost)}</div>
+            </td>
+          </tr>
+        </table>
+      </div>
     </div>'''
 
 
@@ -867,13 +944,317 @@ with tab_items:
 # ================================================================
 # TAB 3 — BUILDINGS
 # ================================================================
+
+# ⚡ Category pill order and labels for the PRODUCTION inner tab
+_BLD_CATEGORIES = ["All", "Production", "Extraction", "Power", "Logistics",
+                   "Storage", "Transit", "Structure", "Decor", "Special"]
+
+# ⚡ AgGrid icon renderer for buildings (same pattern as Items tab)
+_bld_icon_renderer = JsCode("""
+class IconCellRenderer {
+    init(params) {
+        this.eGui = document.createElement('span');
+        this.eGui.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;';
+        if (params.value) {
+            var img = document.createElement('img');
+            img.src = params.value;
+            img.style.cssText = 'width:32px;height:32px;object-fit:contain;border-radius:4px;border:1px solid #333;background:#111;';
+            this.eGui.appendChild(img);
+        }
+    }
+    getGui() { return this.eGui; }
+    refresh() { return false; }
+}
+""")
+
+# ⚡ Shared dark AgGrid CSS for buildings grid
+_bld_aggrid_css = {
+    ".ag-root-wrapper": {
+        "background-color": "#000000 !important",
+        "border": "none !important",
+        "font-family": "'Share Tech Mono', monospace !important",
+    },
+    ".ag-header": {
+        "background-color": "#0a0a1a !important",
+        "border-bottom": "1px solid #1e293b !important",
+    },
+    ".ag-header-cell-label": {
+        "color": "#38bdf8 !important",
+        "font-family": "'Share Tech Mono', monospace !important",
+        "font-size": "0.72rem !important",
+        "letter-spacing": "0.15em !important",
+        "text-transform": "uppercase !important",
+    },
+    ".ag-floating-filter": {
+        "background-color": "#000000 !important",
+        "border-bottom": "1px solid #222222 !important",
+    },
+    ".ag-floating-filter-input": {
+        "background-color": "#111111 !important",
+        "color": "#cccccc !important",
+        "border": "1px solid #333333 !important",
+        "border-radius": "4px !important",
+        "font-family": "'Share Tech Mono', monospace !important",
+        "font-size": "0.85rem !important",
+    },
+    ".ag-floating-filter:first-child": {
+        "visibility": "hidden !important",
+    },
+    ".ag-body-viewport": {
+        "background-color": "#000000 !important",
+    },
+    ".ag-row": {
+        "background-color": "#000000 !important",
+        "border-bottom": "1px solid #111111 !important",
+        "color": "#cccccc !important",
+        "font-family": "'Share Tech Mono', monospace !important",
+        "font-size": "0.85rem !important",
+        "letter-spacing": "0.05em !important",
+        "cursor": "pointer !important",
+    },
+    ".ag-row-hover": {
+        "background-color": "rgba(56,189,248,0.06) !important",
+    },
+    ".ag-row-selected": {
+        "background-color": "rgba(56,189,248,0.12) !important",
+        "color": "#ffffff !important",
+    },
+    ".ag-cell": {
+        "border-right": "none !important",
+        "line-height": "52px !important",
+    },
+    ".ag-overlay-no-rows-center": {
+        "color": "#555555 !important",
+        "font-family": "'Share Tech Mono', monospace !important",
+        "font-size": "0.75rem !important",
+        "letter-spacing": "0.2em !important",
+    },
+    ".ag-body-viewport::-webkit-scrollbar": {"width": "6px !important"},
+    ".ag-body-viewport::-webkit-scrollbar-track": {"background": "#000000 !important"},
+    ".ag-body-viewport::-webkit-scrollbar-thumb": {
+        "background": "#1e3a4a !important",
+        "border-radius": "3px !important",
+    },
+}
+
+# ⚡ onFirstDataRendered JS — deselect on filter change + "clear" button in icon col
+_bld_on_ready_js = JsCode("""
+function(params) {
+    params.api.addEventListener('filterChanged', function() {
+        params.api.deselectAll();
+    });
+    setTimeout(function() {
+        var wrapper = document.querySelector('.ag-root-wrapper');
+        if (!wrapper) return;
+        var firstFilter = wrapper.querySelector('.ag-floating-filter');
+        if (firstFilter) {
+            firstFilter.style.visibility = 'visible';
+            firstFilter.innerHTML = '';
+            firstFilter.style.display = 'flex';
+            firstFilter.style.alignItems = 'center';
+            firstFilter.style.justifyContent = 'center';
+            var btn = document.createElement('button');
+            btn.innerText = 'clear';
+            btn.style.cssText = 'background:none;border:1px solid #333;border-radius:4px;color:#555;font-family:Share Tech Mono,monospace;font-size:0.65rem;letter-spacing:0.08em;cursor:pointer;padding:2px 8px;transition:color 0.15s,border-color 0.15s;line-height:1.4;';
+            btn.onmouseover = function() { btn.style.color='#38bdf8'; btn.style.borderColor='#38bdf8'; };
+            btn.onmouseout  = function() { btn.style.color='#555'; btn.style.borderColor='#333'; };
+            btn.onclick = function() {
+                params.api.setFilterModel(null);
+                var input = wrapper.querySelector('.ag-floating-filter-input input');
+                if (input) {
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                }
+            };
+            firstFilter.appendChild(btn);
+        }
+    }, 200);
+}
+""")
+
 with tab_buildings:
     st.markdown('<div class="section-title">// BUILDINGS DATABASE //</div>',
                 unsafe_allow_html=True)
-    st.markdown("""
-    <div style="font-family:'Share Tech Mono',monospace;color:#555;font-size:0.75rem;
-                text-align:center;letter-spacing:0.2em;">COMING SOON</div>
-    """, unsafe_allow_html=True)
+
+    # ⚡ Inner sub-tabs: PRODUCTION and UPGRADES
+    bld_tab_prod, bld_tab_upgrades = st.tabs(["PRODUCTION", "UPGRADES"])
+
+    # ----------------------------------------------------------------
+    # PRODUCTION inner tab
+    # ----------------------------------------------------------------
+    with bld_tab_prod:
+
+        # ⚡ Category filter state — default "All"
+        if "bld_category" not in st.session_state:
+            st.session_state.bld_category = "All"
+
+        # ⚡ Category pill buttons — one per category in a single row of columns
+        # NOTE: these use st.button which causes a Python rerun on click; the grid
+        # re-filters server-side. If this causes awkward page-load jank (same issue
+        # as chip navigation) we'll switch to st.radio(horizontal=True).
+        pill_cols = st.columns(len(_BLD_CATEGORIES), gap="small")
+        for i, cat in enumerate(_BLD_CATEGORIES):
+            with pill_cols[i]:
+                is_active = st.session_state.bld_category == cat
+                # Active pill: blue glow; inactive: dim
+                btn_style = (
+                    "background:rgba(56,189,248,0.18);border:1px solid #38bdf8;"
+                    "color:#e0f2fe;box-shadow:0 0 8px #38bdf844;"
+                    if is_active else
+                    "background:transparent;border:1px solid #222;color:#444;"
+                )
+                st.markdown(
+                    f'<style>.pill-{i}>button{{font-family:"Share Tech Mono",monospace!important;'
+                    f'font-size:0.65rem!important;letter-spacing:0.1em!important;'
+                    f'padding:3px 6px!important;height:auto!important;min-height:0!important;'
+                    f'width:100%!important;{btn_style}border-radius:6px!important;'
+                    f'transition:all 0.15s!important;}}</style>'
+                    f'<div class="pill-{i}">',
+                    unsafe_allow_html=True,
+                )
+                if st.button(cat.upper(), key=f"bld_pill_{cat}", use_container_width=True):
+                    st.session_state.bld_category = cat
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # ⚡ Placeholder for detail card ABOVE the grid
+        bld_detail_placeholder = st.empty()
+
+        # ⚡ Build filtered building list
+        all_buildings = list_buildings(data)
+        selected_cat = st.session_state.bld_category
+        if selected_cat == "All":
+            filtered = all_buildings
+        else:
+            filtered = [b for b in all_buildings if b["category"] == selected_cat.lower()]
+
+        # ⚡ Count label
+        st.markdown(
+            f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;'
+            f'color:#38bdf866;text-align:right;margin-bottom:4px;letter-spacing:0.1em;">'
+            f'{len(filtered)} BUILDINGS</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ⚡ Build DataFrame for AgGrid
+        df_bld = pd.DataFrame([
+            {
+                "icon": b["image_url"],
+                "name": b["name"],
+                "category": b["category"].capitalize(),
+                "power": b["power_mw"],
+                "tier": b["tier"] if b["tier"] is not None else "",
+            }
+            for b in filtered
+        ])
+
+        # ⚡ Grid options
+        gb_bld = GridOptionsBuilder.from_dataframe(df_bld)
+
+        gb_bld.configure_column(
+            field="icon", header_name="",
+            cellRenderer=_bld_icon_renderer,
+            width=60, maxWidth=60, minWidth=60,
+            sortable=False, filter=False, resizable=False, suppressMovable=True,
+        )
+        gb_bld.configure_column(
+            field="name", header_name="BUILDING",
+            floatingFilter=True, filter="agTextColumnFilter",
+            filterParams=JsCode("""{
+                filterOptions: ['contains'],
+                defaultOption: 'contains',
+                maxNumConditions: 1,
+            }"""),
+            flex=2, suppressMovable=True,
+        )
+        gb_bld.configure_column(
+            field="category", header_name="CATEGORY",
+            sortable=True, filter=False, width=110, suppressMovable=True,
+        )
+        gb_bld.configure_column(
+            field="power", header_name="POWER (MW)",
+            sortable=True, filter=False, width=120, suppressMovable=True,
+            type=["numericColumn", "rightAligned"],
+            valueFormatter=JsCode("""
+            function(params) {
+                if (params.value === 0 || params.value === '' || params.value == null) return '—';
+                if (params.value < 0) return '+' + Math.abs(params.value).toFixed(0);
+                return params.value.toFixed(0);
+            }
+            """),
+        )
+        gb_bld.configure_column(
+            field="tier", header_name="TIER",
+            sortable=True, filter=False, width=70, suppressMovable=True,
+            type=["numericColumn", "rightAligned"],
+            valueFormatter=JsCode("""
+            function(params) {
+                if (params.value === '' || params.value == null) return '—';
+                return 'T' + params.value;
+            }
+            """),
+        )
+
+        gb_bld.configure_selection(selection_mode="single", use_checkbox=False)
+        gb_bld.configure_grid_options(
+            rowHeight=52,
+            headerHeight=32,
+            floatingFiltersHeight=40,
+            suppressHorizontalScroll=True,
+            suppressCellFocus=True,
+            suppressRowDeselection=False,
+            domLayout="normal",
+            onFirstDataRendered=_bld_on_ready_js,
+        )
+
+        bld_grid_options = gb_bld.build()
+
+        # ⚡ Render the grid
+        bld_grid_response = AgGrid(
+            df_bld,
+            gridOptions=bld_grid_options,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            height=500,
+            allow_unsafe_jscode=True,
+            theme="alpine",
+            custom_css=_bld_aggrid_css,
+        )
+
+        # ⚡ Row click → look up full building data and render detail card
+        bld_selected_rows = bld_grid_response.get("selected_rows", None)
+        bld_selected_name = None
+
+        if bld_selected_rows is not None:
+            if isinstance(bld_selected_rows, pd.DataFrame) and len(bld_selected_rows) > 0:
+                bld_selected_name = bld_selected_rows.iloc[0]["name"]
+            elif isinstance(bld_selected_rows, list) and len(bld_selected_rows) > 0:
+                bld_selected_name = bld_selected_rows[0]["name"]
+
+        if bld_selected_name:
+            bld_detail = next(
+                (b for b in all_buildings if b["name"] == bld_selected_name), None
+            )
+            if bld_detail:
+                with bld_detail_placeholder.container():
+                    st.markdown(
+                        f'<div style="text-align:center;margin-bottom:4px;">'
+                        f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
+                        f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
+                        f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
+                        f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(building_card(bld_detail), unsafe_allow_html=True)
+
+    # ----------------------------------------------------------------
+    # UPGRADES inner tab (Task 4 — placeholder)
+    # ----------------------------------------------------------------
+    with bld_tab_upgrades:
+        st.markdown(
+            '<div style="font-family:\'Share Tech Mono\',monospace;color:#555;font-size:0.75rem;'
+            'text-align:center;letter-spacing:0.2em;margin-top:2rem;">COMING SOON</div>',
+            unsafe_allow_html=True,
+        )
 
 # --- FOOTER ---
 st.markdown("""

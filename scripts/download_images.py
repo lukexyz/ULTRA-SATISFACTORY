@@ -1,23 +1,26 @@
-"""Download all item images from satisfactory.wiki.gg to app/static/images/.
+"""Download item and/or building images from satisfactory.wiki.gg to app/static/images/.
 
 Usage:
-    python scripts/download_images.py          # download both 64px and 256px
-    python scripts/download_images.py 256      # download only 256px
+    python scripts/download_images.py                  # download items + buildings, 64px + 512px
+    python scripts/download_images.py --items          # items only
+    python scripts/download_images.py --buildings      # buildings only
+    python scripts/download_images.py --size 64        # override size(s), comma-separated
+    python scripts/download_images.py --buildings --size 64,512
 
-Idempotent -- skips files that already exist. Run once after cloning the repo.
-Images are committed to the repo (~2MB) for stlite/GitHub Pages compatibility.
+Idempotent -- skips files that already exist.
+Images are committed to the repo for stlite/GitHub Pages compatibility.
 
 Directory structure:
-    app/static/images/64/{slug}.png   -- thumbnails (chips, grid icons)
-    app/static/images/256/{slug}.png  -- hero cards (objective cards, detail views)
+    app/static/images/64/{slug}.png    -- thumbnails (chips, grid icons)
+    app/static/images/512/{slug}.png   -- hero cards (detail views, objective cards)
 """
 
+import argparse
 import json
-import sys
 import time
-import urllib.request
 import urllib.error
 import urllib.parse
+import urllib.request
 from pathlib import Path
 
 # Resolve paths relative to this script
@@ -25,43 +28,44 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = REPO_ROOT / "data" / "data.json"
 IMAGES_BASE = REPO_ROOT / "app" / "static" / "images"
 
-SIZES = [64, 256]  # px — small for chips, large for hero cards
+DEFAULT_SIZES = [64, 512]
 
 
 def image_slug(name: str) -> str:
-    """Convert item display name to a filesystem-safe slug."""
+    """Convert display name to a filesystem-safe slug. Must match data.py exactly."""
     return name.replace(" ", "_").replace("'", "_").replace(":", "_")
 
 
 def wiki_url(name: str, size: int) -> str:
-    """Return the wiki.gg thumbnail URL for an item."""
+    """Return the wiki.gg thumbnail URL for an item or building."""
     slug = name.replace(" ", "_")
-    # URL-encode non-ASCII characters (e.g. trademark symbol)
     encoded_slug = urllib.parse.quote(slug, safe="_")
     return f"https://satisfactory.wiki.gg/images/thumb/{encoded_slug}.png/{size}px-{encoded_slug}.png"
 
 
-def download_size(items: dict, size: int):
-    """Download all items at a given size."""
+def download_size(entries: dict, size: int, label: str = "entries"):
+    """Download all entries at a given size.
+
+    entries: dict of {class_key: {"name": display_name, ...}}
+    """
     dest_dir = IMAGES_BASE / str(size)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    total = len(items)
+    total = len(entries)
     downloaded = 0
     skipped = 0
     failed = []
 
-    print(f">> Downloading {total} item images at {size}px to {dest_dir}")
-    print()
+    print(f"\n>> Downloading {total} {label} images at {size}px to {dest_dir}")
 
-    for i, (key, item) in enumerate(sorted(items.items(), key=lambda x: x[1].get("name", "")), 1):
+    for i, (key, item) in enumerate(sorted(entries.items(), key=lambda x: x[1].get("name", "")), 1):
         name = item.get("name", key)
         slug = image_slug(name)
         dest = dest_dir / f"{slug}.png"
 
         if dest.exists():
             skipped += 1
-            print(f"  [{i:3d}/{total}] {name} ... skipped (exists)")
+            print(f"  [{i:3d}/{total}] {name} ... skipped")
             continue
 
         url = wiki_url(name, size)
@@ -71,44 +75,64 @@ def download_size(items: dict, size: int):
                 dest.write_bytes(resp.read())
             downloaded += 1
             print(f"  [{i:3d}/{total}] {name} ... ok")
-            # Be polite to wiki.gg
-            time.sleep(0.1)
+            time.sleep(0.1)  # be polite to wiki.gg
         except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
             failed.append((name, str(e)))
             print(f"  [{i:3d}/{total}] {name} ... FAILED ({e})")
 
-    print()
-    print(f">> {size}px done: {downloaded} downloaded, {skipped} skipped, {len(failed)} failed")
+    print(f"\n>> {size}px {label}: {downloaded} downloaded, {skipped} skipped, {len(failed)} failed")
     if failed:
-        print(f"   Failed items:")
+        print("   Failed entries:")
         for name, err in failed:
             print(f"     - {name}: {err}")
     return failed
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Download Satisfactory wiki images.")
+    parser.add_argument("--items", action="store_true", help="Download item images only")
+    parser.add_argument("--buildings", action="store_true", help="Download building images only")
+    parser.add_argument(
+        "--size",
+        type=str,
+        default=None,
+        help="Comma-separated sizes in px (default: 64,512)",
+    )
+    args = parser.parse_args()
+
+    # If neither flag given, download both
+    do_items = args.items or (not args.items and not args.buildings)
+    do_buildings = args.buildings or (not args.items and not args.buildings)
+
+    sizes = DEFAULT_SIZES
+    if args.size:
+        sizes = [int(s.strip()) for s in args.size.split(",")]
+
     with open(DATA_PATH, encoding="utf-8") as f:
         data = json.load(f)
 
-    # Collect all unique item names (items minus raw resources)
-    resource_keys = set(data.get("resources", {}).keys())
-    items = {
-        key: item
-        for key, item in data.get("items", {}).items()
-        if key not in resource_keys
-    }
-
-    # Allow filtering to a single size via CLI arg
-    sizes = SIZES
-    if len(sys.argv) > 1:
-        sizes = [int(sys.argv[1])]
-
     all_failed = []
-    for size in sizes:
-        failed = download_size(items, size)
-        all_failed.extend(failed)
 
+    if do_items:
+        resource_keys = set(data.get("resources", {}).keys())
+        items = {
+            key: item
+            for key, item in data.get("items", {}).items()
+            if key not in resource_keys
+        }
+        for size in sizes:
+            failed = download_size(items, size, label="item")
+            all_failed.extend(failed)
+
+    if do_buildings:
+        buildings = data.get("buildings", {})
+        for size in sizes:
+            failed = download_size(buildings, size, label="building")
+            all_failed.extend(failed)
+
+    print(f"\n>> Total failed: {len(all_failed)}")
     if all_failed:
+        import sys
         sys.exit(1)
 
 

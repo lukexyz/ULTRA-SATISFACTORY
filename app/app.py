@@ -1169,21 +1169,11 @@ with tab_items:
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        # ⚡ Empty-state placeholder — small elephant + prompt
+        # ⚡ Empty-state placeholder — prompt text only
         with recipe_placeholder.container():
             st.markdown("""
-            <div style="display:flex;align-items:center;gap:16px;
-                        padding:10px 18px;margin:8px 0;border-radius:8px;
+            <div style="padding:10px 18px;margin:8px 0;border-radius:8px;
                         background:#0d0814;border:1px solid #ec489912;">
-              <pre style="margin:0;line-height:1.3;font-size:0.62rem;
-                          color:#ec489930;font-family:'Share Tech Mono',monospace;
-                          flex-shrink:0;user-select:none;">
-   .  .
-  (  (  )--,
-   '--'--'  )
-    \___|__/
-      | |
-     _| |_</pre>
               <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;
                             letter-spacing:0.22em;color:#ec489940;text-transform:uppercase;">
                 select an item to view its recipe
@@ -1427,22 +1417,6 @@ with tab_buildings:
         # ⚡ Placeholder for detail card — sits ABOVE the grid
         bld_placeholder = st.empty()
 
-        # ⚡ Fake column header row — replaces AgGrid native header (headerHeight=0)
-        # Mirrors column widths: icon col is 60px (no label), then flex BUILDING,
-        # 110px CATEGORY, 120px POWER (MW), 70px TIER
-        st.markdown("""
-        <div style="display:flex;align-items:center;background:#0a0a1a;
-                    padding:0 0 0 60px;border-bottom:1px solid #1e293b;
-                    font-family:'Share Tech Mono',monospace;font-size:0.72rem;
-                    letter-spacing:0.15em;color:#38bdf8;text-transform:uppercase;
-                    margin-bottom:-16px;">
-          <div style="flex:2;padding:8px 12px;">Building</div>
-          <div style="width:110px;padding:8px 12px;">Category</div>
-          <div style="width:120px;padding:8px 12px;text-align:right;">Power (MW)</div>
-          <div style="width:70px;padding:8px 12px;text-align:right;">Tier</div>
-        </div>
-        """, unsafe_allow_html=True)
-
         # ⚡ Render the grid
         bld_grid_response = AgGrid(
             df_bld,
@@ -1488,19 +1462,6 @@ with tab_buildings:
                         + building_card(bld_detail),
                         unsafe_allow_html=True,
                     )
-        else:
-            # ⚡ Empty-state placeholder — subtle blue-tinted prompt
-            with bld_placeholder.container():
-                st.markdown("""
-                <div style="display:flex;align-items:center;gap:16px;
-                            padding:10px 18px;margin:8px 0;border-radius:8px;
-                            background:#040d14;border:1px solid #38bdf808;">
-                  <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;
-                                letter-spacing:0.22em;color:#38bdf820;text-transform:uppercase;">
-                    select a building to view details
-                  </span>
-                </div>
-                """, unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
     # ⚡ UPGRADES inner tab — curated Mk.N progression chains

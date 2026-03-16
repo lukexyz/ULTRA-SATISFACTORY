@@ -1096,10 +1096,29 @@ with tab_items:
             "border": "none !important",
             "font-family": "'Share Tech Mono', monospace !important",
         },
+        ".ag-root": {
+            "background-color": "#000000 !important",
+        },
         # Header row (hidden via headerHeight=0 but just in case)
         ".ag-header": {
             "background-color": "#000000 !important",
             "border-bottom": "none !important",
+        },
+        ".ag-header-viewport": {
+            "background-color": "#000000 !important",
+            "border": "none !important",
+        },
+        ".ag-pinned-left-header": {
+            "background-color": "#000000 !important",
+            "border": "none !important",
+        },
+        ".ag-pinned-right-header": {
+            "background-color": "#000000 !important",
+            "border": "none !important",
+        },
+        ".ag-floating-filter-body": {
+            "background-color": "#000000 !important",
+            "border": "none !important",
         },
         # Floating filter bar (the search input row)
         ".ag-floating-filter": {
@@ -1116,7 +1135,14 @@ with tab_items:
         },
         # Hide the icon column's floating filter (no filter for icon)
         ".ag-floating-filter:first-child": {
-            "visibility": "hidden !important",
+            "display": "none !important",
+        },
+        # Kill resize handles (source of corner/pixel artifacts)
+        ".ag-header-cell-resize": {
+            "display": "none !important",
+        },
+        ".ag-header-cell-resize::after": {
+            "display": "none !important",
         },
         # Body / viewport
         ".ag-body-viewport": {
@@ -1218,17 +1244,9 @@ with tab_items:
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        # ⚡ Empty-state placeholder — prompt text only
+        # ⚡ Empty-state placeholder — keep layout stable, no hint box
         with recipe_placeholder.container():
-            st.markdown("""
-            <div style="padding:10px 18px;margin:8px 0;border-radius:8px;
-                        background:#0d0814;border:1px solid #ec489912;">
-              <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;
-                            letter-spacing:0.22em;color:#ec489940;text-transform:uppercase;">
-                select an item to view its recipe
-              </span>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("", unsafe_allow_html=True)
 
 # ================================================================
 # TAB 3 — BUILDINGS

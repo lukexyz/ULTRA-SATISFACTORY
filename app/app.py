@@ -1160,9 +1160,12 @@ _bld_aggrid_css = {
         "letter-spacing": "0.15em !important",
         "text-transform": "uppercase !important",
     },
+    ".ag-header-row-floating-filter": {
+        "border-bottom": "1px solid #1e293b !important",
+    },
     ".ag-floating-filter": {
         "background-color": "#000000 !important",
-        "border-bottom": "1px solid #222222 !important",
+        "border-bottom": "none !important",
     },
     ".ag-floating-filter-input": {
         "background-color": "#111111 !important",
@@ -1213,6 +1216,7 @@ _bld_aggrid_css = {
 }
 
 # ⚡ onFirstDataRendered JS — deselect on filter change + "clear" button in icon col
+# ⚡ Also moves the floating filter row above the column headers in the DOM
 _bld_on_ready_js = JsCode("""
 function(params) {
     params.api.addEventListener('filterChanged', function() {
@@ -1221,6 +1225,17 @@ function(params) {
     setTimeout(function() {
         var wrapper = document.querySelector('.ag-root-wrapper');
         if (!wrapper) return;
+
+        // ⚡ Move floating filter row above the column header row
+        var headerRoot = wrapper.querySelector('.ag-header-root');
+        if (!headerRoot) headerRoot = wrapper.querySelector('.ag-header');
+        var floatingRow = wrapper.querySelector('.ag-header-row-floating-filter');
+        var colHeaderRow = wrapper.querySelector('.ag-header-row-column');
+        if (floatingRow && colHeaderRow && floatingRow.parentNode === colHeaderRow.parentNode) {
+            floatingRow.parentNode.insertBefore(floatingRow, colHeaderRow);
+        }
+
+        // ⚡ Replace icon-column floating filter cell with a "clear" button
         var firstFilter = wrapper.querySelector('.ag-floating-filter');
         if (firstFilter) {
             firstFilter.style.visibility = 'visible';

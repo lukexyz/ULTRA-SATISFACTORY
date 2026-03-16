@@ -87,6 +87,9 @@
 - ⚡ **All FICSIT build piece image slugs confirmed:** every unconfirmed variant slug (`Ramp_Wall_2m_(FICSIT)`, `Ramp_Wall_4m_(FICSIT)`, `Inv._Ramp_Wall_2m/4m_(FICSIT)`, `Inner/Outer_Corner_Roof_2m_(FICSIT)`, `Conveyor_Wall_x2/x3_(FICSIT)`) returned HTTP 200 with exact size-matched slugs — no fallbacks needed.
 - ⚡ **Tilted Wall variants needed overrides:** `Tilted Concave Wall 4m/8m`, `Tilted Corner Wall 4m/8m`, `Tilted Wall 4m/8m` were missing from the initial override map. Added as `Tilted_*_(FICSIT)` slugs. Final result: 0 failures across all 477 buildings at both 64px and 512px.
 - ⚡ **`local_image_url()` missing leading `/`:** `data.py` was returning `app/static/images/64/{slug}.png` (no leading slash). AgGrid's image renderer resolved paths relative to its own frontend build directory (`st_aggrid/frontend/build/app/static/...`), causing `FileNotFoundError` floods. Fixed by adding the leading `/`. The notebook `nbs/00_data.ipynb` already had the correct form — `data.py` had drifted out of sync. Committed `533a4dd`.
+- ⚡ **`st.selectbox` format_func is text-only:** cannot inject HTML, images, or markdown into selectbox options. To get thumbnails/icons inside a phase picker, custom HTML `<a href>` pills are required.
+- ⚡ **AgGrid column resize handles = white dot glitch source:** `.ag-header-cell-resize` renders a thin visible element at each column boundary. Setting `display:none` on it (and `::after`) eliminates the sub-pixel white dot artifacts in the header area.
+- ⚡ **DOM reorder of AgGrid floating filter is unreliable:** `insertBefore(floatingRow, colHeaderRow)` in `onFirstDataRendered` JS does not reliably reorder the header vs floating filter rows across AgGrid render cycles. The correct approach is `headerHeight=0` (hide native header) + a static `st.markdown` fake header row above the `AgGrid()` call — zero JS, zero timing dependency, pixel-perfect.
 
 ---
 
@@ -204,9 +207,11 @@ _Rules for how the AI operates on this project. Applied every session._
 
 8. ⚡ ☑ <span style="color: purple">**Fix card corner pixel glitch**</span> — removed `border-radius:9px 9px 0 0` from the header `<div>` in both `recipe_card()` and `building_card()`. The outer wrapper's `overflow:hidden` + `border-radius:10px` now clips the header cleanly with no sub-pixel Chromium compositing artifact. Committed `15d04f7`.
 
-9. ⚡ ☑ <span style="color: purple">**BUILDINGS search bar position**</span> — `_bld_on_ready_js` updated to reorder the DOM after render: `insertBefore(floatingRow, colHeaderRow)` moves `.ag-header-row-floating-filter` above `.ag-header-row-column`. Column headers (BUILDING / CATEGORY / POWER / TIER) remain visible below the search bar. Added `border-bottom` on `.ag-header-row-floating-filter` for visual separation. Committed `8a677d5`.
+9. ⚡ ☑ <span style="color: purple">**BUILDINGS search bar position**</span> — switched to `headerHeight=0` (same as ITEMS tab) and added a static `st.markdown` fake header row above the `AgGrid()` call. Fake header uses `display:flex` with `padding-left:60px` gap for the icon column, then BUILDING/CATEGORY/POWER (MW)/TIER in `#38bdf8` Share Tech Mono. Eliminated DOM reorder JS entirely. Also killed column resize handle white-dot pixel glitches by adding `.ag-header-cell-resize { display:none }` to `_bld_aggrid_css`. Committed `937a282`.
 
-1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
+10. ⚡ ☑ <span style="color: purple">**Objectives phase pill strip**</span> — replaced `st.selectbox` with a custom HTML phase pill strip. Five pills centre-aligned with `&#9656;` arrows between them. Active pill: gold glow border, expanded to show thumbnails + description + item names with quantities. Inactive pills: compact dim number badge + tiny thumbnails (24px), clickable via `<a href="?phase=N">`. `PHASE_DESCRIPTIONS` dict added. `?phase=N` query param handler added (runs before `st.tabs()`). Section title now centre-aligned with description subtitle below. Committed `937a282`.
+
+1. ☐ **CRT exit transition** *(parked)*
 
 ---
 

@@ -81,6 +81,9 @@ def recipe_card(result: dict) -> str:
     power = result['machine_power']
     cycle = result['cycle_time']
     recipe_name = result['recipe_name']
+    # ⚡ Resolve building image for the "Produced in" cell
+    machine_img = local_image_url(machine)
+    machine_encoded = machine.replace(' ', '%20')
 
     def item_cell(entries):
         parts = []
@@ -146,11 +149,17 @@ def recipe_card(result: dict) -> str:
             {item_cell(result['ingredients'])}
           </td>
           <td style="padding:10px 12px;text-align:center;vertical-align:middle;border-right:1px solid #222;">
-            <a href="?building={machine.replace(' ', '%20')}"
-               style="font-weight:600;font-size:1.05em;color:#7ec8e3;text-decoration:none;
-                      text-shadow:0 0 8px #38bdf844;"
-               title="View in Buildings">{machine}</a>
-            <div style="font-size:0.82em;color:#7ec8e3;">{cycle}s cycle &bull; {power} MW</div>
+            <a href="?building={machine_encoded}"
+               style="display:inline-flex;flex-direction:column;align-items:center;gap:6px;
+                      text-decoration:none;color:inherit;"
+               title="View in Buildings">
+              <img src="{machine_img}" width="80" height="80"
+                   style="border:2px solid #38bdf8;border-radius:8px;background:#1a1a2e;
+                          box-shadow:0 0 10px #38bdf833;">
+              <span style="font-weight:600;font-size:1.05em;color:#7ec8e3;
+                           text-shadow:0 0 8px #38bdf844;">{machine}</span>
+              <span style="font-size:0.82em;color:#7ec8e3;">{cycle}s cycle &bull; {power} MW</span>
+            </a>
           </td>
           <td style="padding:10px 12px;vertical-align:middle;">
             {item_cell(result['products'])}

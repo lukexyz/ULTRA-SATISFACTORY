@@ -190,8 +190,6 @@ _Rules for how the AI operates on this project. Applied every session._
 
 7. ⚡ ☑ <span style="color: purple">**Scrape missing building images**</span> — added `WIKI_NAME_OVERRIDES` dict to `scripts/download_images.py`; maps 92 `data.json` display names to correct wiki image slugs (FICSIT variant names, renamed generators, Pipeline Junction Cross). All 477 buildings now have cached 64px + 512px images; 0 failures. Committed `d57061b`.
 
-1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
-
 2. ⚡ ☑ <span style="color: purple">**Data functions — notebook + export**</span> — three new functions in `nbs/00_data.ipynb`, exported to `ultra_satisfactory/data.py`:
    - `list_buildings(data)` — functional buildings: `powerConsumption > 0` + all miners dict entries. Each: `{className, name, slug, description, powerConsumption, powerConsumptionExponent}`. Sorted A-Z.
    - `get_building_unlock(class_name, data)` — reverse-lookup: `schematics → unlock.recipes[] → recipe.products[].item == class_name`. Returns `{schematic_name, tier, type, cost: [{name, amount}]}` or `None`.
@@ -202,11 +200,13 @@ _Rules for how the AI operates on this project. Applied every session._
 4. ⚡ ☑ <span style="color: purple">**Buildings tab — UPGRADES inner tab**</span> — neon sub-tabs for each progression group (Miners, Conveyor Belts, Pipelines, Storage Containers — groups with only one member hidden). Each group: horizontal card row (one card per Mk tier) showing Mk badge, building image, power draw (`—` for 0MW), unlock tier badge. Selected card highlighted gold. Detail panel below: full unlock cost (item name + amount), schematic name + tier, Prev/Next navigation buttons to step through the chain.
    - Known groups: Miners (Mk.1→2→3), Conveyor Belts (Mk.1→2→3→4→5), Pipelines (Mk.1→2), Storage Containers (Mk.I→II)
 
-6. ⚡ ☑ <span style="color: purple">**Update `project.md`**</span> — Phase 3 discoveries added, todos #2/#3/#4/#6 marked complete.
+6. ⚡ ☑ <span style="color: purple">**Update `project.md`**</span> — Phase 3 discoveries added, todos #2/#3/#4/#6/#8/#9 marked complete, completed items reordered to top.
 
-8. ⚡ ☐ **Fix card corner pixel glitch** — `border:1px solid` + `border-radius` + `overflow:hidden` + opaque header child causes sub-pixel Chromium compositing artifacts at rounded corners on both `recipe_card()` and `building_card()`. Previous `inset box-shadow` and `border-radius` on header attempts did not fully resolve it. Needs definitive fix.
+8. ⚡ ☑ <span style="color: purple">**Fix card corner pixel glitch**</span> — removed `border-radius:9px 9px 0 0` from the header `<div>` in both `recipe_card()` and `building_card()`. The outer wrapper's `overflow:hidden` + `border-radius:10px` now clips the header cleanly with no sub-pixel Chromium compositing artifact. Committed `15d04f7`.
 
-9. ⚡ ☐ **BUILDINGS search bar position** — floating filter currently renders inside the column header row. Move it above the column headers (like the ITEMS tab) so it sits between the detail card and the column labels. Column headers (BUILDING / CATEGORY / POWER / TIER) should remain visible below the search bar.
+9. ⚡ ☑ <span style="color: purple">**BUILDINGS search bar position**</span> — `_bld_on_ready_js` updated to reorder the DOM after render: `insertBefore(floatingRow, colHeaderRow)` moves `.ag-header-row-floating-filter` above `.ag-header-row-column`. Column headers (BUILDING / CATEGORY / POWER / TIER) remain visible below the search bar. Added `border-bottom` on `.ag-header-row-floating-filter` for visual separation. Committed `8a677d5`.
+
+1. ☐ **CRT exit transition** *(parked — hopefully not needed once images are local)* — two `st.html` injections after logo block (before session state init). CSS injection: `@keyframes crt-flicker` (brightness/contrast pulses, ~250ms, ends at `brightness(0)`); `body.crt-exit [data-testid="stApp"]` triggers animation; `body.crt-exit::before` renders scanline overlay (`position:fixed; inset:0; repeating-linear-gradient; z-index:9999; pointer-events:none`). JS injection (`unsafe_allow_javascript=True`, wrapped in `<div style="display:none;">`): event delegation on `document` for `.recipe-chip` clicks — `preventDefault()`, add `crt-exit` to `document.body`, `setTimeout(260ms)` then `window.location.href`.
 
 ---
 

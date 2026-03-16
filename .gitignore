@@ -6,3 +6,6 @@ _proc/
 *.egg-info/
 __pycache__/
 *.pyc
+
+# stlite generated output
+docs/

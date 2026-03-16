@@ -127,7 +127,9 @@ _Rules for how the AI operates on this project. Applied every session._
 
 9. ⚡ **Git commits:** commit regularly — at natural checkpoints (end of a todo, after a key discovery, after a working implementation). Write concise but descriptive messages, e.g. `feat: add X` or `fix: correct Y`.
 
-10. ⚡ **Auto-reorder todo list:** whenever a todo item is completed, automatically reorder the todo list so completed items (`☑`) appear at the top of their phase (in order of completion) and pending items (`☐`) follow below. Notify Luke when reordering occurs.
+10. ⚡ **GitHub profile:** Luke's GitHub username is `lukexyz` and the repo URL is `https://github.com/lukexyz/ULTRA-SATISFACTORY`. Always use this in any URL, config, or generated content -- never guess or infer a different username.
+
+11. ⚡ **Auto-reorder todo list:** whenever a todo item is completed, automatically reorder the todo list so completed items (`☑`) appear at the top of their phase (in order of completion) and pending items (`☐`) follow below. Notify Luke when reordering occurs.
 
 ---
 

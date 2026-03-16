@@ -2,8 +2,8 @@
 
 d = { 'settings': { 'branch': 'main',
                 'doc_baseurl': '/ultra-satisfactory',
-                'doc_host': 'https://lukedavisbbd.github.io',
-                'git_url': 'https://github.com/lukedavisbbd/ultra-satisfactory',
+                'doc_host': 'https://lukexyz.github.io',
+                'git_url': 'https://github.com/lukexyz/ULTRA-SATISFACTORY',
                 'lib_path': 'ultra_satisfactory'},
   'syms': { 'ultra_satisfactory.data': { 'ultra_satisfactory.data._find_images_base': ( 'data.html#_find_images_base',
                                                                                         'ultra_satisfactory/data.py'),

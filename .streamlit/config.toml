@@ -2,6 +2,10 @@
 # This ensures the browser paints black (not white) during full page reloads,
 # eliminating the white flash when navigating via recipe chip clicks.
 
+[server]
+# ⚡ Serve files from app/static/ at /app/static/{filename}
+enableStaticServing = true
+
 [theme]
 backgroundColor = "#000000"
 secondaryBackgroundColor = "#0f0f23"

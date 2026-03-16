@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ultra_satisfactory.data import load_data, wiki_image_url, get_item_recipe, list_items
+from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
@@ -56,7 +56,7 @@ def recipe_card(result: dict) -> str:
     def item_cell(entries):
         parts = []
         for e in entries:
-            e_img = wiki_image_url(e['name'], 48)
+            e_img = local_image_url(e['name'])
             e_name_encoded = e['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
                 f'<a class="recipe-chip" href="?item={e_name_encoded}">'
@@ -567,7 +567,7 @@ with tab_objectives:
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:
-            img_url = wiki_image_url(obj["name"], 256)
+            img_url = local_image_url(obj["name"])
 
             # The actual st.button — tall, text hidden via CSS
             if st.button("select", key=f"obj_btn_{i}", use_container_width=True):

@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock, get_upgrade_chain
+from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock, get_upgrade_chain, get_building_produces
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
@@ -189,6 +189,7 @@ def building_card(bld: dict) -> str:
     unlock_name = bld['unlock_name'] or '—'
     description = bld['description']
     cost = bld['cost']  # list of {name, amount}
+    produces = bld.get('produces', [])  # list of {name, class_key}
 
     # Power display: negative = generator (produces), positive = consumer, 0 = no power
     if power_mw < 0:
@@ -215,6 +216,22 @@ def building_card(bld: dict) -> str:
                 f'<span style="font-size:0.82em;color:#ccc;">'
                 f'<span style="color:#e8d44d;font-weight:600;">{int(c["amount"])}&times;</span> '
                 f'{c["name"]}</span></a>'
+            )
+        return ''.join(parts)
+
+    # Produces chips — navigable links to ITEMS tab
+    def produces_chips(produces_list):
+        if not produces_list:
+            return '<span style="color:#555;font-size:0.82em;">—</span>'
+        parts = []
+        for p in produces_list:
+            img_url = local_image_url(p['name'])
+            encoded = p['name'].replace(' ', '%20').replace("'", "%27")
+            parts.append(
+                f'<a class="recipe-chip" href="?item={encoded}">'
+                f'<img src="{img_url}" width="28" height="28" '
+                f'style="border-radius:3px;border:1px solid #444;background:#111;">'
+                f'<span style="font-size:0.82em;color:#ccc;">{p["name"]}</span></a>'
             )
         return ''.join(parts)
 
@@ -245,8 +262,8 @@ def building_card(bld: dict) -> str:
               <div style="line-height:1.8;">{cost_chips(cost)}</div>
             </td>
             <td style="padding:6px 8px;border-top:1px solid #1e293b;border-left:1px solid #1e293b;width:50%;vertical-align:top;">
-              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Power</div>
-              <div style="font-size:0.95em;">{power_str}</div>
+              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Produces</div>
+              <div style="line-height:1.8;">{produces_chips(produces)}</div>
             </td>
           </tr>
         </table>
@@ -1343,6 +1360,9 @@ with tab_buildings:
 
         # ⚡ All buildings — no category filtering, search via AgGrid floating filter
         all_buildings = list_buildings(data)
+        # ⚡ Enrich each building with produces list
+        for _b in all_buildings:
+            _b["produces"] = get_building_produces(_b["class_key"], data)
 
         # ⚡ Count label
         st.markdown(

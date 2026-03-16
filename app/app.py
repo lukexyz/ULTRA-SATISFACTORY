@@ -36,12 +36,41 @@ def get_data():
 
 data = get_data()
 
-# Space Elevator Phase 3 objectives
-OBJECTIVES = [
-    {"name": "Versatile Framework",    "required": 2500},
-    {"name": "Modular Engine",         "required": 500},
-    {"name": "Adaptive Control Unit",  "required": 100},
-]
+# ⚡ Space Elevator objectives — all 5 phases
+SPACE_ELEVATOR_PHASES = {
+    1: [
+        {"name": "Smart Plating",           "required": 50},
+        {"name": "Versatile Framework",     "required": 100},
+        {"name": "Automated Wiring",        "required": 500},
+    ],
+    2: [
+        {"name": "Automated Wiring",        "required": 500},
+        {"name": "Modular Frame",           "required": 500},
+        {"name": "Smart Plating",           "required": 100},
+        {"name": "Versatile Framework",     "required": 500},
+    ],
+    3: [
+        {"name": "Versatile Framework",     "required": 2500},
+        {"name": "Modular Engine",          "required": 500},
+        {"name": "Adaptive Control Unit",   "required": 100},
+    ],
+    4: [
+        {"name": "Assembly Director System","required": 1000},
+        {"name": "Magnetic Field Generator","required": 500},
+        {"name": "Nuclear Pasta",           "required": 100},
+        {"name": "Thermal Propulsion Rocket","required": 25},
+    ],
+    5: [
+        {"name": "Biochemical Sculptor",    "required": 500},
+        {"name": "AI Expansion Server",     "required": 100},
+        {"name": "Neural-Quantum Processor","required": 100},
+        {"name": "Ballistic Warp Drive",    "required": 100},
+    ],
+}
+
+# ⚡ Default to phase stored in session state (set by selector in tab)
+if "selected_phase" not in st.session_state:
+    st.session_state.selected_phase = 3
 
 # --- RECIPE CARD FUNCTION (shared across tabs) ---
 def recipe_card(result: dict) -> str:
@@ -117,7 +146,10 @@ def recipe_card(result: dict) -> str:
             {item_cell(result['ingredients'])}
           </td>
           <td style="padding:10px 12px;text-align:center;vertical-align:middle;border-right:1px solid #222;">
-            <div style="font-weight:600;font-size:1.05em;color:#fff;">{machine}</div>
+            <a href="?building={machine.replace(' ', '%20')}"
+               style="font-weight:600;font-size:1.05em;color:#7ec8e3;text-decoration:none;
+                      text-shadow:0 0 8px #38bdf844;"
+               title="View in Buildings">{machine}</a>
             <div style="font-size:0.82em;color:#7ec8e3;">{cycle}s cycle &bull; {power} MW</div>
           </td>
           <td style="padding:10px 12px;vertical-align:middle;">
@@ -618,6 +650,8 @@ if "selected_item" not in st.session_state:
     st.session_state.selected_item = None  # ⚡ default: no selection — ghost placeholder shown
 if "chip_item" not in st.session_state:
     st.session_state.chip_item = None
+if "chip_building" not in st.session_state:
+    st.session_state.chip_building = None
 
 # ⚡ Query param handler: clicking a recipe chip sets ?item=Name
 # Must run BEFORE st.tabs() so we can set the default tab to ITEMS
@@ -626,8 +660,14 @@ if _queried_item:
     st.session_state.chip_item = _queried_item
     st.query_params.clear()
 
+# ⚡ Query param handler: hotlinks set ?building=Name → jump to BUILDINGS tab
+_queried_building = st.query_params.get("building")
+if _queried_building:
+    st.session_state.chip_building = _queried_building
+    st.query_params.clear()
+
 # --- TABS ---
-_default_tab = "ITEMS" if _queried_item else None
+_default_tab = "ITEMS" if _queried_item else ("BUILDINGS" if _queried_building else None)
 tab_objectives, tab_items, tab_buildings = st.tabs(
     ["OBJECTIVES", "ITEMS", "BUILDINGS"], default=_default_tab
 )
@@ -636,10 +676,28 @@ tab_objectives, tab_items, tab_buildings = st.tabs(
 # TAB 1 — OBJECTIVES
 # ================================================================
 with tab_objectives:
-    st.markdown('<div class="section-title">// SPACE ELEVATOR &mdash; PHASE 3 //</div>',
+    # ⚡ Phase selector
+    phase_col, _ = st.columns([2, 3])
+    with phase_col:
+        selected = st.selectbox(
+            "Space Elevator Phase",
+            options=[1, 2, 3, 4, 5],
+            index=st.session_state.selected_phase - 1,
+            format_func=lambda x: f"Phase {x}",
+            key="phase_selector",
+            label_visibility="collapsed",
+        )
+        if selected != st.session_state.selected_phase:
+            st.session_state.selected_phase = selected
+            st.session_state.selected_item = None
+            st.rerun()
+
+    OBJECTIVES = SPACE_ELEVATOR_PHASES[st.session_state.selected_phase]
+
+    st.markdown(f'<div class="section-title">// SPACE ELEVATOR &mdash; PHASE {st.session_state.selected_phase} //</div>',
                 unsafe_allow_html=True)
 
-    cols = st.columns(3, gap="medium")
+    cols = st.columns(len(OBJECTIVES), gap="medium")
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:
@@ -1194,52 +1252,14 @@ with tab_buildings:
     # ----------------------------------------------------------------
     with bld_tab_prod:
 
-        # ⚡ Category filter state — default "All"
-        if "bld_category" not in st.session_state:
-            st.session_state.bld_category = "All"
-
-        # ⚡ Category pill buttons — one per category in a single row of columns
-        # NOTE: these use st.button which causes a Python rerun on click; the grid
-        # re-filters server-side. If this causes awkward page-load jank (same issue
-        # as chip navigation) we'll switch to st.radio(horizontal=True).
-        pill_cols = st.columns(len(_BLD_CATEGORIES), gap="small")
-        for i, cat in enumerate(_BLD_CATEGORIES):
-            with pill_cols[i]:
-                is_active = st.session_state.bld_category == cat
-                # Active pill: blue glow; inactive: dim
-                btn_style = (
-                    "background:rgba(56,189,248,0.18);border:1px solid #38bdf8;"
-                    "color:#e0f2fe;box-shadow:0 0 8px #38bdf844;"
-                    if is_active else
-                    "background:transparent;border:1px solid #222;color:#444;"
-                )
-                st.markdown(
-                    f'<style>.pill-{i}>button{{font-family:"Share Tech Mono",monospace!important;'
-                    f'font-size:0.65rem!important;letter-spacing:0.1em!important;'
-                    f'padding:3px 6px!important;height:auto!important;min-height:0!important;'
-                    f'width:100%!important;{btn_style}border-radius:6px!important;'
-                    f'transition:all 0.15s!important;}}</style>'
-                    f'<div class="pill-{i}">',
-                    unsafe_allow_html=True,
-                )
-                if st.button(cat.upper(), key=f"bld_pill_{cat}", use_container_width=True):
-                    st.session_state.bld_category = cat
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # ⚡ Build filtered building list
+        # ⚡ All buildings — no category filtering, search via AgGrid floating filter
         all_buildings = list_buildings(data)
-        selected_cat = st.session_state.bld_category
-        if selected_cat == "All":
-            filtered = all_buildings
-        else:
-            filtered = [b for b in all_buildings if b["category"] == selected_cat.lower()]
 
         # ⚡ Count label
         st.markdown(
             f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;'
             f'color:#38bdf866;text-align:right;margin-bottom:4px;letter-spacing:0.1em;">'
-            f'{len(filtered)} BUILDINGS</div>',
+            f'{len(all_buildings)} BUILDINGS</div>',
             unsafe_allow_html=True,
         )
 
@@ -1252,7 +1272,7 @@ with tab_buildings:
                 "power": b["power_mw"],
                 "tier": b["tier"] if b["tier"] is not None else "",
             }
-            for b in filtered
+            for b in all_buildings
         ])
 
         # ⚡ Grid options
@@ -1316,6 +1336,9 @@ with tab_buildings:
 
         bld_grid_options = gb_bld.build()
 
+        # ⚡ Placeholder for detail card — sits ABOVE the grid
+        bld_placeholder = st.empty()
+
         # ⚡ Render the grid
         bld_grid_response = AgGrid(
             df_bld,
@@ -1336,85 +1359,31 @@ with tab_buildings:
         if bld_selected_rows is not None:
             if isinstance(bld_selected_rows, pd.DataFrame) and len(bld_selected_rows) > 0:
                 bld_selected_name = bld_selected_rows.iloc[0]["name"]
+                st.session_state.chip_building = None  # grid click overrides hotlink
             elif isinstance(bld_selected_rows, list) and len(bld_selected_rows) > 0:
                 bld_selected_name = bld_selected_rows[0]["name"]
+                st.session_state.chip_building = None
 
+        # Hotlink via ?building= takes effect if nothing clicked in grid
+        if not bld_selected_name and st.session_state.chip_building:
+            bld_selected_name = st.session_state.chip_building
+
+        # ⚡ Render detail card into placeholder above the grid
         if bld_selected_name:
             bld_detail = next(
                 (b for b in all_buildings if b["name"] == bld_selected_name), None
             )
             if bld_detail:
-                st.markdown(
-                    f'<div style="text-align:center;margin-bottom:4px;">'
-                    f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
-                    f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
-                    f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
-                    f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>'
-                    + building_card(bld_detail),
-                    unsafe_allow_html=True,
-                )
-        if not bld_selected_name:
-            # ⚡ Ghost placeholder — shown before any row is selected
-            st.markdown('''
-            <div style="background:linear-gradient(135deg,#080810,#0d0d1a);
-                        border:1px solid #38bdf818;border-radius:10px;
-                        margin:12px 0;overflow:hidden;max-width:820px;
-                        box-shadow:0 0 12px #38bdf808, 0 0 30px #38bdf804;">
-              <!-- Ghost header bar -->
-              <div style="background:#07101a;padding:10px 16px;
-                          display:flex;align-items:center;gap:12px;
-                          border-bottom:1px solid #38bdf810;">
-                <div style="width:52px;height:52px;border-radius:6px;flex-shrink:0;
-                             background:#0e2030;border:2px solid #1e3a4a;opacity:0.6;"></div>
-                <div style="display:flex;flex-direction:column;gap:7px;">
-                  <div style="width:180px;height:12px;border-radius:4px;
-                               background:#1a3347;opacity:0.55;"></div>
-                  <div style="width:260px;height:9px;border-radius:4px;
-                               background:#112233;opacity:0.45;"></div>
-                </div>
-              </div>
-              <!-- Ghost body -->
-              <div style="padding:10px 16px 12px 16px;">
-        <table style="width:100%;border-collapse:separate;border-spacing:0;">
-                  <tr>
-                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
-                                width:50%;vertical-align:top;">
-                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
-                                  text-transform:uppercase;margin-bottom:6px;
-                                  font-family:'Share Tech Mono',monospace;">Power</div>
-                      <div style="width:80px;height:10px;border-radius:4px;
-                                   background:#1a3347;opacity:0.4;"></div>
-                    </td>
-                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
-                                border-left:1px solid #38bdf80e;
-                                width:50%;vertical-align:top;">
-                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
-                                  text-transform:uppercase;margin-bottom:6px;
-                                  font-family:'Share Tech Mono',monospace;">Build Cost</div>
-                      <div style="display:flex;gap:6px;">
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                        <div style="width:36px;height:28px;border-radius:5px;
-                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-                <!-- Prompt -->
-                <div style="text-align:center;margin-top:10px;padding-top:8px;
-                             border-top:1px solid #38bdf80a;">
-                  <span style="font-family:'Share Tech Mono',monospace;
-                                font-size:0.68rem;letter-spacing:0.28em;
-                                color:#38bdf844;text-transform:uppercase;
-                                text-shadow:0 0 14px #38bdf822;">
-                    select a building for details
-                  </span>
-                </div>
-              </div>
-            </div>
-            ''', unsafe_allow_html=True)
+                with bld_placeholder.container():
+                    st.markdown(
+                        f'<div style="text-align:center;margin-bottom:4px;">'
+                        f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
+                        f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
+                        f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
+                        f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>'
+                        + building_card(bld_detail),
+                        unsafe_allow_html=True,
+                    )
 
     # ----------------------------------------------------------------
     # ⚡ UPGRADES inner tab — curated Mk.N progression chains

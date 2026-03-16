@@ -198,6 +198,30 @@ _Rules for how the AI operates on this project. Applied every session._
 
 6. ☐ **Update `project.md`** — add Phase 3 discoveries, decisions, mark todos complete, write Phase 3 summary.
 
+7. ⚡ ☐ **Scrape missing building images** — run `scripts/download_images.py` targeting buildings list; many structure/logistics/decor buildings (e.g. Basic Wall 1m) have no local image and fall back to broken wiki URLs. Download 64px + 512px for all buildings that currently have no cached file. Commit new images to repo.
+
+8. ⚡ ☐ **Fix card corner pixel glitch** — `border:1px solid` + `border-radius` + `overflow:hidden` + opaque header child causes sub-pixel Chromium compositing artifacts at rounded corners on both `recipe_card()` and `building_card()`. Previous `inset box-shadow` and `border-radius` on header attempts did not fully resolve it. Needs definitive fix.
+
+9. ⚡ ☐ **BUILDINGS search bar position** — floating filter currently renders inside the column header row. Move it above the column headers (like the ITEMS tab) so it sits between the detail card and the column labels. Column headers (BUILDING / CATEGORY / POWER / TIER) should remain visible below the search bar.
+
+---
+
+━━━━━━━━━━━━━━━━━━━━━[ PHASE 4 ]━━━━━━━━━━━━━━━━━━━━━
+
+**Goal:** Smart phase picker for Objectives tab — remembers user's Space Elevator phase across sessions.
+
+1. ⚡ ☐ **Phase picker — collapsed pill** — centered pill above objective cards showing `PHASE 3 · Versatile Framework · Modular Engine · Adaptive Control Unit ▾`. Phase number in gold, item names small + dim monospace. Hidden `st.button` underneath (overlay pattern). Clicking → `phase_picker_open = True` + `st.rerun()`.
+
+2. ⚡ ☐ **Phase picker — expanded overlay** — `position: fixed; z-index: 9999` centered panel. 5 rows, one per phase. Each row: 3 small item icons (32px local static images), gold phase badge, item names in dim monospace. Hidden `st.button` per row. Selected phase gets gold left border. Full-screen transparent backdrop `div` behind panel triggers hidden "close" button on click.
+
+3. ⚡ ☐ **Fresh visit behaviour** — no `localStorage` value → picker opens expanded by default, phase defaults to 3. Return visit → picker loads collapsed, saved phase already set.
+
+4. ⚡ ☐ **`localStorage` persistence** — `st.components.v1.html(height=0)` JS snippet: on load reads `localStorage.getItem("ultra_sat_phase")`, if found does one-time redirect to `?phase=N`; on phase select writes `localStorage.setItem("ultra_sat_phase", N)` fire-and-forget.
+
+5. ⚡ ☐ **Read `?phase=` param on first session load** — sets `st.session_state.selected_phase` before rendering. After reading, param is no longer needed (session state drives everything).
+
+6. ⚡ ☐ **Images always local static** — use `local_image_url()` only, no wiki fallback in picker. Fix any missing images separately.
+
 ---
 
 ## Debug Log

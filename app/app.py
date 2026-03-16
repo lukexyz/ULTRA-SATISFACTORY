@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Add project root to path so we can import ultra_satisfactory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock
+from ultra_satisfactory.data import load_data, wiki_image_url, local_image_url, get_item_recipe, list_items, list_buildings, get_building_unlock, get_upgrade_chain
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # ⚡ Auto-patch Streamlit's index.html to prevent white flash on page reload.
@@ -1247,12 +1247,142 @@ with tab_buildings:
                     st.markdown(building_card(bld_detail), unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
-    # UPGRADES inner tab (Task 4 — placeholder)
+    # ⚡ UPGRADES inner tab — curated Mk.N progression chains
     # ----------------------------------------------------------------
     with bld_tab_upgrades:
+
+        # ⚡ Curated chains: (section label, slug prefix)
+        # Pipeline deduplication: filter out "(No Indicator)" variants
+        _UPGRADE_CHAINS = [
+            ("MINERS",          "miner"),
+            ("CONVEYOR BELTS",  "conveyor-belt"),
+            ("CONVEYOR LIFTS",  "conveyor-lift"),
+            ("PIPELINES",       "pipeline-mk"),
+            ("PIPELINE PUMPS",  "pipeline-pump"),
+        ]
+
+        def _upgrade_card_html(bld: dict) -> str:
+            """Return HTML for a single Mk tier card in an upgrade chain strip."""
+            img   = bld["image_url_large"]
+            name  = bld["name"]
+            power = bld["power_mw"]
+            tier  = bld["tier"]
+            cost  = bld["cost"]
+
+            if power < 0:
+                power_str = (
+                    f'<span style="color:#4ade80;font-size:0.8em;">+{abs(power):.0f} MW</span>'
+                )
+            elif power > 0:
+                power_str = (
+                    f'<span style="color:#7ec8e3;font-size:0.8em;">{power:.0f} MW</span>'
+                )
+            else:
+                power_str = '<span style="color:#444;font-size:0.8em;">— MW</span>'
+
+            tier_str = (
+                f'<span style="color:#38bdf8;font-size:0.72em;letter-spacing:0.1em;">T{tier}</span>'
+                if tier else
+                '<span style="color:#333;font-size:0.72em;">—</span>'
+            )
+
+            # Cost: up to 3 chips, rest truncated
+            cost_parts = []
+            for c in cost[:3]:
+                img_c = local_image_url(c["name"], 64)
+                cost_parts.append(
+                    f'<span style="display:inline-flex;align-items:center;gap:3px;'
+                    f'margin:2px 3px;border-radius:5px;padding:2px 5px;'
+                    f'background:rgba(255,255,255,0.05);border:1px solid #2a2a3a;'
+                    f'white-space:nowrap;">'
+                    f'<img src="{img_c}" width="18" height="18" '
+                    f'style="border-radius:2px;border:1px solid #333;background:#111;">'
+                    f'<span style="font-size:0.72em;color:#aaa;">'
+                    f'<span style="color:#e8d44d;">{int(c["amount"])}&times;</span>'
+                    f'</span></span>'
+                )
+            if len(cost) > 3:
+                cost_parts.append(
+                    f'<span style="font-size:0.68em;color:#444;">+{len(cost)-3} more</span>'
+                )
+            cost_html = "".join(cost_parts) if cost_parts else (
+                '<span style="font-size:0.72em;color:#444;">free</span>'
+            )
+
+            return (
+                f'<div style="display:flex;flex-direction:column;align-items:center;'
+                f'background:linear-gradient(160deg,#0a0a1a,#111827);'
+                f'border:1px solid #1e3a4a;border-radius:10px;padding:12px 10px 10px 10px;'
+                f'min-width:130px;max-width:160px;gap:6px;'
+                f'box-shadow:0 0 8px #38bdf811;transition:border-color 0.2s;">'
+                # Image
+                f'<img src="{img}" width="72" height="72" '
+                f'style="border:2px solid #1e3a4a;border-radius:8px;'
+                f'background:#0a0a1a;object-fit:contain;">'
+                # Name
+                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.78em;'
+                f'color:#e0f2fe;text-align:center;line-height:1.3;'
+                f'letter-spacing:0.04em;">{name}</div>'
+                # Power + Tier row
+                f'<div style="display:flex;gap:8px;align-items:center;justify-content:center;">'
+                f'{power_str} {tier_str}</div>'
+                # Cost chips
+                f'<div style="display:flex;flex-wrap:wrap;justify-content:center;'
+                f'gap:2px;margin-top:2px;">{cost_html}</div>'
+                f'</div>'
+            )
+
+        def _arrow_html() -> str:
+            """Chevron arrow between upgrade tier cards."""
+            return (
+                '<div style="display:flex;align-items:center;padding:0 4px;'
+                'color:#38bdf866;font-size:1.4em;flex-shrink:0;">&#8250;</div>'
+            )
+
+        def _render_chain(label: str, prefix: str) -> str:
+            """Build the full HTML for one upgrade chain section."""
+            chain = get_upgrade_chain(prefix, data)
+            # Deduplicate by Mk number — keeps first seen (standard, not No Indicator)
+            seen_mk = {}
+            deduped = []
+            for b in chain:
+                slug = b["slug"]
+                try:
+                    idx = slug.index("-mk-")
+                    mk  = int(slug[idx + 4:].split("-")[0])
+                except (ValueError, IndexError):
+                    mk = 99
+                if mk not in seen_mk:
+                    seen_mk[mk] = True
+                    deduped.append(b)
+
+            if not deduped:
+                return ""
+
+            # Section header
+            html = (
+                f'<div style="font-family:\'Share Tech Mono\',monospace;'
+                f'font-size:0.72rem;color:#38bdf8;letter-spacing:0.2em;'
+                f'text-transform:uppercase;margin:18px 0 8px 2px;">'
+                f'// {label}</div>'
+                f'<div style="display:flex;align-items:center;flex-wrap:nowrap;'
+                f'overflow-x:auto;gap:0;padding-bottom:8px;'
+                f'scrollbar-width:thin;scrollbar-color:#1e3a4a #000;">'
+            )
+            for i, bld in enumerate(deduped):
+                if i > 0:
+                    html += _arrow_html()
+                html += _upgrade_card_html(bld)
+            html += "</div>"
+            return html
+
+        # ⚡ Render all chains
+        all_chains_html = ""
+        for chain_label, chain_prefix in _UPGRADE_CHAINS:
+            all_chains_html += _render_chain(chain_label, chain_prefix)
+
         st.markdown(
-            '<div style="font-family:\'Share Tech Mono\',monospace;color:#555;font-size:0.75rem;'
-            'text-align:center;letter-spacing:0.2em;margin-top:2rem;">COMING SOON</div>',
+            f'<div style="padding:4px 0 16px 0;">{all_chains_html}</div>',
             unsafe_allow_html=True,
         )
 

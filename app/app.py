@@ -645,6 +645,20 @@ st.markdown("""
     div[data-testid="stSelectbox"] svg {
         fill: #e8d44d88 !important;
     }
+    @keyframes shimmer-once {
+        0%   { background-position: -200% center; }
+        100% { background-position:  200% center; }
+    }
+    .ghost-bar {
+        background: linear-gradient(90deg, #2a1548 25%, #3d1f6e 50%, #2a1548 75%) !important;
+        background-size: 400% 100% !important;
+        animation: shimmer-once 2s ease-in-out 1 forwards !important;
+    }
+    .ghost-bar-dim {
+        background: linear-gradient(90deg, #1a0e2e 25%, #2a1548 50%, #1a0e2e 75%) !important;
+        background-size: 400% 100% !important;
+        animation: shimmer-once 2s ease-in-out 1 forwards !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -819,10 +833,8 @@ with tab_objectives:
             <div style="width:48px;height:48px;border-radius:6px;flex-shrink:0;
                          background:#1a0e2e;border:2px solid #2a1548;opacity:0.6;"></div>
             <div style="display:flex;flex-direction:column;gap:7px;">
-              <div style="width:160px;height:12px;border-radius:4px;
-                           background:#2a1548;opacity:0.6;"></div>
-              <div style="width:220px;height:9px;border-radius:4px;
-                           background:#1a0e2e;opacity:0.45;"></div>
+              <div class="ghost-bar" style="width:160px;height:12px;border-radius:4px;opacity:0.6;"></div>
+              <div class="ghost-bar-dim" style="width:220px;height:9px;border-radius:4px;opacity:0.45;"></div>
             </div>
           </div>
           <!-- Ghost table -->
@@ -830,18 +842,15 @@ with tab_objectives:
             <tr style="background:#0a0612;">
               <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
                          width:40%;">
-                <div style="width:90px;height:9px;border-radius:4px;
-                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+                <div class="ghost-bar" style="width:90px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
               </th>
               <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
                          width:25%;">
-                <div style="width:70px;height:9px;border-radius:4px;
-                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+                <div class="ghost-bar" style="width:70px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
               </th>
               <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
                          width:35%;">
-                <div style="width:60px;height:9px;border-radius:4px;
-                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+                <div class="ghost-bar" style="width:60px;height:9px;border-radius:4px;opacity:0.45;margin:0 auto;"></div>
               </th>
             </tr>
             <tr>
@@ -853,10 +862,8 @@ with tab_objectives:
                                  background:#1a0e2e;border:1px solid #2a1548;
                                  opacity:0.5;flex-shrink:0;"></div>
                     <div style="display:flex;flex-direction:column;gap:5px;">
-                      <div style="width:100px;height:9px;border-radius:4px;
-                                   background:#2a1548;opacity:0.45;"></div>
-                      <div style="width:60px;height:7px;border-radius:4px;
-                                   background:#1a0e2e;opacity:0.35;"></div>
+                      <div class="ghost-bar" style="width:100px;height:9px;border-radius:4px;opacity:0.45;"></div>
+                      <div class="ghost-bar-dim" style="width:60px;height:7px;border-radius:4px;opacity:0.35;"></div>
                     </div>
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;">
@@ -864,10 +871,8 @@ with tab_objectives:
                                  background:#1a0e2e;border:1px solid #2a1548;
                                  opacity:0.5;flex-shrink:0;"></div>
                     <div style="display:flex;flex-direction:column;gap:5px;">
-                      <div style="width:80px;height:9px;border-radius:4px;
-                                   background:#2a1548;opacity:0.45;"></div>
-                      <div style="width:50px;height:7px;border-radius:4px;
-                                   background:#1a0e2e;opacity:0.35;"></div>
+                      <div class="ghost-bar" style="width:80px;height:9px;border-radius:4px;opacity:0.45;"></div>
+                      <div class="ghost-bar-dim" style="width:50px;height:7px;border-radius:4px;opacity:0.35;"></div>
                     </div>
                   </div>
                 </div>
@@ -875,10 +880,8 @@ with tab_objectives:
               <td style="padding:14px 12px;text-align:center;vertical-align:middle;
                           border-right:1px solid #a855f708;">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                  <div style="width:90px;height:11px;border-radius:4px;
-                               background:#2a1548;opacity:0.5;"></div>
-                  <div style="width:110px;height:8px;border-radius:4px;
-                               background:#1a0e2e;opacity:0.35;"></div>
+                  <div class="ghost-bar" style="width:90px;height:11px;border-radius:4px;opacity:0.5;"></div>
+                  <div class="ghost-bar-dim" style="width:110px;height:8px;border-radius:4px;opacity:0.35;"></div>
                 </div>
               </td>
               <td style="padding:14px 12px;vertical-align:middle;">
@@ -887,10 +890,8 @@ with tab_objectives:
                                background:#1a0e2e;border:1px solid #2a1548;
                                opacity:0.5;flex-shrink:0;"></div>
                   <div style="display:flex;flex-direction:column;gap:5px;">
-                    <div style="width:100px;height:9px;border-radius:4px;
-                                 background:#2a1548;opacity:0.45;"></div>
-                    <div style="width:60px;height:7px;border-radius:4px;
-                                 background:#1a0e2e;opacity:0.35;"></div>
+                    <div class="ghost-bar" style="width:100px;height:9px;border-radius:4px;opacity:0.45;"></div>
+                    <div class="ghost-bar-dim" style="width:60px;height:7px;border-radius:4px;opacity:0.35;"></div>
                   </div>
                 </div>
               </td>
@@ -898,7 +899,8 @@ with tab_objectives:
           </table>
           <!-- Prompt -->
           <div style="text-align:center;padding:10px 0 12px 0;
-                       border-top:1px solid #a855f70a;">
+                       border-top:1px solid #a855f70a;
+                       border-radius:0 0 10px 10px;background:#0c0816;">
             <span style="font-family:'Share Tech Mono',monospace;
                           font-size:0.68rem;letter-spacing:0.28em;
                           color:#a855f744;text-transform:uppercase;

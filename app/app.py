@@ -103,7 +103,7 @@ def recipe_card(result: dict) -> str:
           <div style="font-size:0.8em;color:#333;">Recipe: {recipe_name}</div>
         </div>
       </div>
-      <table style="width:100%;border-collapse:collapse;margin:0;">
+      <table style="width:100%;border-collapse:separate;border-spacing:0;margin:0;">
         <tr style="background:#12122a;">
           <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #333;color:#e8d44d;
                      font-size:0.85em;width:40%;">Ingredients</th>
@@ -1371,7 +1371,7 @@ with tab_buildings:
               </div>
               <!-- Ghost body -->
               <div style="padding:10px 16px 12px 16px;">
-                <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;border-collapse:separate;border-spacing:0;">
                   <tr>
                     <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
                                 width:50%;vertical-align:top;">

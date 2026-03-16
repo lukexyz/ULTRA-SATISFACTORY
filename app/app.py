@@ -615,7 +615,7 @@ st.markdown("""
 
 # --- SESSION STATE ---
 if "selected_item" not in st.session_state:
-    st.session_state.selected_item = OBJECTIVES[0]["name"]  # ⚡ default: first objective open
+    st.session_state.selected_item = None  # ⚡ default: no selection — ghost placeholder shown
 if "chip_item" not in st.session_state:
     st.session_state.chip_item = None
 
@@ -662,26 +662,132 @@ with tab_objectives:
             </div>
             """, unsafe_allow_html=True)
 
-    # Recipe display
-    if st.session_state.selected_item:
-        st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
-        result = get_item_recipe(st.session_state.selected_item, data)
-        if result:
-            st.markdown(f"""
-            <div style="text-align:center;margin-bottom:4px;">
-                <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;
-                             color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;
-                             text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">
-                &gt;&gt; {st.session_state.selected_item} &lt;&lt;</span>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(recipe_card(result), unsafe_allow_html=True)
+    # ⚡ Recipe display — always render the divider + one st.markdown() to avoid
+    # layout teardown/rebuild lag when toggling selection on/off.
+    st.markdown('<hr class="hacker-divider">', unsafe_allow_html=True)
+
+    _obj_selected = st.session_state.selected_item
+    if _obj_selected:
+        _obj_result = get_item_recipe(_obj_selected, data)
+        if _obj_result:
+            st.markdown(
+                f'<div style="text-align:center;margin-bottom:4px;">'
+                f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
+                f'color:#e8d44d;letter-spacing:0.3em;text-transform:uppercase;'
+                f'text-shadow:0 0 8px #e8d44d, 0 0 20px #d4a01788;">'
+                f'&gt;&gt; {_obj_selected} &lt;&lt;</span></div>'
+                + recipe_card(_obj_result),
+                unsafe_allow_html=True,
+            )
         else:
             st.markdown(f"""
             <div class="status-box">
-                &gt; ERROR: Recipe not found for {st.session_state.selected_item} &lt;
+                &gt; ERROR: Recipe not found for {_obj_selected} &lt;
             </div>
             """, unsafe_allow_html=True)
+    else:
+        # ⚡ Purple ghost placeholder — shown before any objective card is clicked
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,#0c0816,#110e1e);
+                    border:1px solid #a855f718;border-radius:10px;
+                    margin:12px 0;overflow:hidden;max-width:820px;
+                    box-shadow:0 0 12px #a855f708, 0 0 30px #a855f704;">
+          <!-- Ghost header bar -->
+          <div style="background:#0e0818;padding:10px 16px;
+                      display:flex;align-items:center;gap:12px;
+                      border-bottom:1px solid #a855f710;">
+            <div style="width:48px;height:48px;border-radius:6px;flex-shrink:0;
+                         background:#1a0e2e;border:2px solid #2a1548;opacity:0.6;"></div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="width:160px;height:12px;border-radius:4px;
+                           background:#2a1548;opacity:0.6;"></div>
+              <div style="width:220px;height:9px;border-radius:4px;
+                           background:#1a0e2e;opacity:0.45;"></div>
+            </div>
+          </div>
+          <!-- Ghost table -->
+          <table style="width:100%;border-collapse:collapse;margin:0;">
+            <tr style="background:#0a0612;">
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
+                         width:40%;">
+                <div style="width:90px;height:9px;border-radius:4px;
+                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+              </th>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
+                         width:25%;">
+                <div style="width:70px;height:9px;border-radius:4px;
+                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+              </th>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #a855f70e;
+                         width:35%;">
+                <div style="width:60px;height:9px;border-radius:4px;
+                             background:#2a1548;opacity:0.45;margin:0 auto;"></div>
+              </th>
+            </tr>
+            <tr>
+              <td style="padding:14px 12px;vertical-align:middle;
+                          border-right:1px solid #a855f708;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:40px;height:40px;border-radius:4px;
+                                 background:#1a0e2e;border:1px solid #2a1548;
+                                 opacity:0.5;flex-shrink:0;"></div>
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                      <div style="width:100px;height:9px;border-radius:4px;
+                                   background:#2a1548;opacity:0.45;"></div>
+                      <div style="width:60px;height:7px;border-radius:4px;
+                                   background:#1a0e2e;opacity:0.35;"></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:40px;height:40px;border-radius:4px;
+                                 background:#1a0e2e;border:1px solid #2a1548;
+                                 opacity:0.5;flex-shrink:0;"></div>
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                      <div style="width:80px;height:9px;border-radius:4px;
+                                   background:#2a1548;opacity:0.45;"></div>
+                      <div style="width:50px;height:7px;border-radius:4px;
+                                   background:#1a0e2e;opacity:0.35;"></div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding:14px 12px;text-align:center;vertical-align:middle;
+                          border-right:1px solid #a855f708;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div style="width:90px;height:11px;border-radius:4px;
+                               background:#2a1548;opacity:0.5;"></div>
+                  <div style="width:110px;height:8px;border-radius:4px;
+                               background:#1a0e2e;opacity:0.35;"></div>
+                </div>
+              </td>
+              <td style="padding:14px 12px;vertical-align:middle;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:40px;height:40px;border-radius:4px;
+                               background:#1a0e2e;border:1px solid #2a1548;
+                               opacity:0.5;flex-shrink:0;"></div>
+                  <div style="display:flex;flex-direction:column;gap:5px;">
+                    <div style="width:100px;height:9px;border-radius:4px;
+                                 background:#2a1548;opacity:0.45;"></div>
+                    <div style="width:60px;height:7px;border-radius:4px;
+                                 background:#1a0e2e;opacity:0.35;"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <!-- Prompt -->
+          <div style="text-align:center;padding:10px 0 12px 0;
+                       border-top:1px solid #a855f70a;">
+            <span style="font-family:'Share Tech Mono',monospace;
+                          font-size:0.68rem;letter-spacing:0.28em;
+                          color:#a855f744;text-transform:uppercase;
+                          text-shadow:0 0 14px #a855f722;">
+              select an objective for recipe details
+            </span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ================================================================
 # TAB 2 — ITEMS (AgGrid with instant floating filter)
@@ -1117,9 +1223,6 @@ with tab_buildings:
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # ⚡ Placeholder for detail card ABOVE the grid
-        bld_detail_placeholder = st.empty()
-
         # ⚡ Build filtered building list
         all_buildings = list_buildings(data)
         selected_cat = st.session_state.bld_category
@@ -1221,6 +1324,8 @@ with tab_buildings:
         )
 
         # ⚡ Row click → look up full building data and render detail card
+        # Always renders exactly one st.markdown() — either real card or ghost.
+        # No st.empty() — avoids layout teardown/rebuild lag on deselect.
         bld_selected_rows = bld_grid_response.get("selected_rows", None)
         bld_selected_name = None
 
@@ -1235,16 +1340,77 @@ with tab_buildings:
                 (b for b in all_buildings if b["name"] == bld_selected_name), None
             )
             if bld_detail:
-                with bld_detail_placeholder.container():
-                    st.markdown(
-                        f'<div style="text-align:center;margin-bottom:4px;">'
-                        f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
-                        f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
-                        f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
-                        f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(building_card(bld_detail), unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="text-align:center;margin-bottom:4px;">'
+                    f'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;'
+                    f'color:#38bdf8;letter-spacing:0.3em;text-transform:uppercase;'
+                    f'text-shadow:0 0 8px #38bdf8, 0 0 20px #0ea5e988;">'
+                    f'&gt;&gt; {bld_selected_name} &lt;&lt;</span></div>'
+                    + building_card(bld_detail),
+                    unsafe_allow_html=True,
+                )
+        if not bld_selected_name:
+            # ⚡ Ghost placeholder — shown before any row is selected
+            st.markdown('''
+            <div style="background:linear-gradient(135deg,#080810,#0d0d1a);
+                        border:1px solid #38bdf818;border-radius:10px;
+                        margin:12px 0;overflow:hidden;max-width:820px;
+                        box-shadow:0 0 12px #38bdf808, 0 0 30px #38bdf804;">
+              <!-- Ghost header bar -->
+              <div style="background:#07101a;padding:10px 16px;
+                          display:flex;align-items:center;gap:12px;
+                          border-bottom:1px solid #38bdf810;">
+                <div style="width:52px;height:52px;border-radius:6px;flex-shrink:0;
+                             background:#0e2030;border:2px solid #1e3a4a;opacity:0.6;"></div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="width:180px;height:12px;border-radius:4px;
+                               background:#1a3347;opacity:0.55;"></div>
+                  <div style="width:260px;height:9px;border-radius:4px;
+                               background:#112233;opacity:0.45;"></div>
+                </div>
+              </div>
+              <!-- Ghost body -->
+              <div style="padding:10px 16px 12px 16px;">
+                <table style="width:100%;border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
+                                width:50%;vertical-align:top;">
+                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
+                                  text-transform:uppercase;margin-bottom:6px;
+                                  font-family:'Share Tech Mono',monospace;">Power</div>
+                      <div style="width:80px;height:10px;border-radius:4px;
+                                   background:#1a3347;opacity:0.4;"></div>
+                    </td>
+                    <td style="padding:8px 8px;border-top:1px solid #38bdf80e;
+                                border-left:1px solid #38bdf80e;
+                                width:50%;vertical-align:top;">
+                      <div style="font-size:0.72em;color:#38bdf822;letter-spacing:0.15em;
+                                  text-transform:uppercase;margin-bottom:6px;
+                                  font-family:'Share Tech Mono',monospace;">Build Cost</div>
+                      <div style="display:flex;gap:6px;">
+                        <div style="width:36px;height:28px;border-radius:5px;
+                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
+                        <div style="width:36px;height:28px;border-radius:5px;
+                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
+                        <div style="width:36px;height:28px;border-radius:5px;
+                                     background:#0e2030;border:1px solid #1e3a4a;opacity:0.5;"></div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+                <!-- Prompt -->
+                <div style="text-align:center;margin-top:10px;padding-top:8px;
+                             border-top:1px solid #38bdf80a;">
+                  <span style="font-family:'Share Tech Mono',monospace;
+                                font-size:0.68rem;letter-spacing:0.28em;
+                                color:#38bdf844;text-transform:uppercase;
+                                text-shadow:0 0 14px #38bdf822;">
+                    select a building for details
+                  </span>
+                </div>
+              </div>
+            </div>
+            ''', unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
     # ⚡ UPGRADES inner tab — curated Mk.N progression chains

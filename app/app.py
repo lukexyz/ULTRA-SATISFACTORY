@@ -62,7 +62,7 @@ def recipe_card(result: dict) -> str:
                 f'<a class="recipe-chip" href="?item={e_name_encoded}">'
                 f'<span style="font-weight:600;color:#e8d44d;">{e["amount"]}&times;</span>'
                 f'<img src="{e_img}" width="40" height="40" '
-                f'style="image-rendering:pixelated;border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
+                f'style="border:1px solid #555;border-radius:4px;background:#1a1a2e;">'
                 f'<span style="font-size:0.82em;color:#ccc;">{e["name"]}<br>'
                 f'<span style="color:#7ec8e3;">{e["rate_per_min"]}/min</span></span>'
                 f'</a>'
@@ -97,7 +97,7 @@ def recipe_card(result: dict) -> str:
       <div style="background:linear-gradient(90deg,#e8d44d,#d4a017);padding:8px 16px;
                   display:flex;align-items:center;gap:12px;">
         <img src="{img}" width="48" height="48"
-             style="image-rendering:pixelated;border:2px solid #fff;border-radius:6px;background:#1a1a2e;">
+             style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;">
         <div>
           <div style="font-size:1.2em;font-weight:700;color:#0f0f23;">{name}</div>
           <div style="font-size:0.8em;color:#333;">Recipe: {recipe_name}</div>
@@ -426,7 +426,6 @@ st.markdown("""
         border: 2px solid #555;
         background: #1a1a2e;
         margin-bottom: 10px;
-        image-rendering: pixelated;
         filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
         width: calc(100% - 24px);
         max-width: 200px;
@@ -567,7 +566,7 @@ with tab_objectives:
 
     for i, obj in enumerate(OBJECTIVES):
         with cols[i]:
-            img_url = local_image_url(obj["name"], 256)
+            img_url = local_image_url(obj["name"], 512)
 
             # The actual st.button — tall, text hidden via CSS
             if st.button("select", key=f"obj_btn_{i}", use_container_width=True):
@@ -633,7 +632,7 @@ with tab_items:
             if (params.value) {
                 var img = document.createElement('img');
                 img.src = params.value;
-                img.style.cssText = 'width:32px;height:32px;object-fit:contain;image-rendering:pixelated;border-radius:4px;border:1px solid #333;background:#111;';
+                img.style.cssText = 'width:32px;height:32px;object-fit:contain;border-radius:4px;border:1px solid #333;background:#111;';
                 this.eGui.appendChild(img);
             }
         }

@@ -66,7 +66,7 @@ def _find_images_base() -> Path | None:
 _IMAGES_BASE = _find_images_base()
 
 # Available cached sizes (subdirectories under images/)
-_CACHED_SIZES = [256, 64]  # checked in order — prefer larger
+_CACHED_SIZES = [512, 256, 64]  # checked in order — prefer larger
 
 
 def local_image_url(item_name: str, size: int = 64) -> str:
@@ -74,7 +74,8 @@ def local_image_url(item_name: str, size: int = 64) -> str:
 
     Images are stored in size subdirectories:
         /app/static/images/64/{slug}.png   -- thumbnails
-        /app/static/images/256/{slug}.png  -- hero cards
+        /app/static/images/256/{slug}.png  -- mid-res
+        /app/static/images/512/{slug}.png  -- hero cards (retina-ready)
 
     Picks the smallest cached size >= requested size.
     Falls back to wiki.gg if no local file found.

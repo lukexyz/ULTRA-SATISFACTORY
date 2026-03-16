@@ -29,7 +29,7 @@ IMAGES_DIR = ROOT / "app" / "static" / "images"
 DOCS_DIR = ROOT / "docs"
 
 # stlite CDN version
-STLITE_VERSION = "0.85.1"
+STLITE_VERSION = "1.3.0"
 STLITE_JS = f"https://cdn.jsdelivr.net/npm/@stlite/browser@{STLITE_VERSION}/build/stlite.js"
 STLITE_CSS = f"https://cdn.jsdelivr.net/npm/@stlite/browser@{STLITE_VERSION}/build/stlite.css"
 

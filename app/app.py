@@ -1234,7 +1234,7 @@ _bld_aggrid_css = {
         "font-size": "0.85rem !important",
     },
     ".ag-floating-filter:first-child": {
-        "visibility": "hidden !important",
+        "display": "none !important",
     },
     ".ag-body-viewport": {
         "background-color": "#000000 !important",

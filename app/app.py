@@ -127,7 +127,7 @@ def recipe_card(result: dict) -> str:
                 color:#eee;overflow:hidden;max-width:820px;
                 box-shadow:0 0 15px #e8d44d44, 0 0 30px #e8d44d22;">
       <div style="background:linear-gradient(90deg,#e8d44d,#d4a017);padding:8px 16px;
-                  display:flex;align-items:center;gap:12px;border-radius:9px 9px 0 0;">
+                  display:flex;align-items:center;gap:12px;">
         <img src="{img}" width="48" height="48"
              style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;">
         <div>
@@ -219,7 +219,7 @@ def building_card(bld: dict) -> str:
                 box-shadow:0 0 15px #38bdf844, 0 0 30px #38bdf822;">
       <!-- Header bar (blue theme for buildings) -->
       <div style="background:linear-gradient(90deg,#0ea5e9,#0284c7);padding:8px 16px;
-                  display:flex;align-items:center;gap:12px;border-radius:9px 9px 0 0;">
+                  display:flex;align-items:center;gap:12px;">
         <img src="{img}" width="52" height="52"
              style="border:2px solid #fff;border-radius:6px;background:#1a1a2e;object-fit:contain;">
         <div>

@@ -200,22 +200,21 @@ def building_card(bld: dict) -> str:
 
     tier_str = f'Tier {tier}' if tier is not None else '—'
 
-    # Build cost chips (plain spans, not navigable — buildings aren't items)
+    # Build cost chips — navigable links to ITEMS tab
     def cost_chips(cost_list):
         if not cost_list:
             return '<span style="color:#555;font-size:0.82em;">Free / Starting</span>'
         parts = []
         for c in cost_list:
             img_url = local_image_url(c['name'])
+            encoded = c['name'].replace(' ', '%20').replace("'", "%27")
             parts.append(
-                f'<span style="display:inline-flex;align-items:center;gap:4px;'
-                f'margin:3px 5px;border-radius:6px;padding:2px 6px;'
-                f'background:rgba(255,255,255,0.06);border:1px solid #333;">'
+                f'<a class="recipe-chip" href="?item={encoded}">'
                 f'<img src="{img_url}" width="28" height="28" '
                 f'style="border-radius:3px;border:1px solid #444;background:#111;">'
                 f'<span style="font-size:0.82em;color:#ccc;">'
                 f'<span style="color:#e8d44d;font-weight:600;">{int(c["amount"])}&times;</span> '
-                f'{c["name"]}</span></span>'
+                f'{c["name"]}</span></a>'
             )
         return ''.join(parts)
 
@@ -242,12 +241,12 @@ def building_card(bld: dict) -> str:
         <table style="width:100%;border-collapse:separate;border-spacing:0;">
           <tr>
             <td style="padding:6px 8px;border-top:1px solid #1e293b;width:50%;vertical-align:top;">
-              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Power</div>
-              <div style="font-size:0.95em;">{power_str}</div>
-            </td>
-            <td style="padding:6px 8px;border-top:1px solid #1e293b;border-left:1px solid #1e293b;width:50%;vertical-align:top;">
               <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Build Cost</div>
               <div style="line-height:1.8;">{cost_chips(cost)}</div>
+            </td>
+            <td style="padding:6px 8px;border-top:1px solid #1e293b;border-left:1px solid #1e293b;width:50%;vertical-align:top;">
+              <div style="font-size:0.72em;color:#38bdf8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Power</div>
+              <div style="font-size:0.95em;">{power_str}</div>
             </td>
           </tr>
         </table>
@@ -644,6 +643,24 @@ st.markdown("""
     }
     div[data-testid="stSelectbox"] svg {
         fill: #e8d44d88 !important;
+    }
+    .recipe-chip {
+        text-decoration: none;
+        color: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 4px 6px;
+        border-radius: 6px;
+        padding: 2px 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .recipe-chip, .recipe-chip * {
+        text-decoration: none !important;
+    }
+    .recipe-chip:hover {
+        background: rgba(255,255,255,0.10);
     }
     @keyframes shimmer-once {
         0%   { background-position: -200% center; }

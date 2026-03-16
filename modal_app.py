@@ -14,9 +14,19 @@ from pathlib import Path
 
 import modal
 
+repo_root = Path(__file__).parent
+
 # ---------------------------------------------------------------------------
-# Container image — Python 3.11, same deps as requirements.txt
+# Container image — Python 3.11, same deps as requirements.txt.
+# add_local_dir() copies repo files into the image at build time (Modal 1.x).
+# We exclude heavy/generated dirs to keep uploads fast.
 # ---------------------------------------------------------------------------
+EXCLUDE = {".git", "__pycache__", ".mypy_cache", "docs", "nbs", "_proc",
+           "ultra_satisfactory.egg-info", "node_modules"}
+
+def _exclude(relpath: Path) -> bool:
+    return any(part in EXCLUDE for part in relpath.parts)
+
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
@@ -24,26 +34,11 @@ image = (
         "streamlit-aggrid==1.2.1.post2",
         "pandas",
     )
-)
-
-# ---------------------------------------------------------------------------
-# Mount the entire repo into /app inside the container.
-# Modal mounts are read-only snapshots uploaded at deploy time.
-# We mount selectively to keep the image small and avoid uploading .git etc.
-# ---------------------------------------------------------------------------
-repo_root = Path(__file__).parent
-
-mount = modal.Mount.from_local_dir(
-    repo_root,
-    remote_path="/app",
-    condition=lambda p: (
-        # include everything except heavy/unnecessary dirs
-        not any(
-            part in Path(p).parts
-            for part in [".git", "__pycache__", ".mypy_cache", "docs", "nbs", "_proc",
-                         "ultra_satisfactory.egg-info", "node_modules"]
-        )
-    ),
+    .add_local_dir(
+        str(repo_root),
+        remote_path="/app",
+        ignore=_exclude,
+    )
 )
 
 # ---------------------------------------------------------------------------
@@ -52,7 +47,8 @@ mount = modal.Mount.from_local_dir(
 app = modal.App(name="ultra-satisfactory", image=image)
 
 
-@app.function(mounts=[mount], allow_concurrent_inputs=100)
+@app.function()
+@modal.concurrent(max_inputs=100)
 @modal.web_server(8000)
 def run():
     target = shlex.quote("/app/app/app.py")

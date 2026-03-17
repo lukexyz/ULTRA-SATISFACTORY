@@ -38,6 +38,7 @@ image = (
         str(repo_root),
         remote_path="/app",
         ignore=_exclude,
+        copy=True,
     )
     # ⚡ Bake dark-background patch into the image at build time so the very
     # first cold-start request already gets a dark index.html — no white flash.

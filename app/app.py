@@ -52,7 +52,7 @@ def _patch_streamlit_index():
 _patch_streamlit_index()
 
 st.set_page_config(
-    page_title="SATISFACTORY CONTROL",
+    page_title="ULTRA-SATISFACTORY",
     page_icon="⚙️",
     layout="centered",
 )

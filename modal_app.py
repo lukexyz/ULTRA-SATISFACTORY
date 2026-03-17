@@ -39,6 +39,11 @@ image = (
         remote_path="/app",
         ignore=_exclude,
     )
+    # ⚡ Bake dark-background patch into the image at build time so the very
+    # first cold-start request already gets a dark index.html — no white flash.
+    # Mirrors the runtime _patch_streamlit_index() in app.py (which stays as
+    # a safety net for local dev and is idempotent).
+    .run_commands("python /app/scripts/patch_streamlit_index.py")
 )
 
 # ---------------------------------------------------------------------------

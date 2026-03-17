@@ -7,6 +7,7 @@
 enableStaticServing = true
 
 [theme]
+base = "dark"
 backgroundColor = "#000000"
 secondaryBackgroundColor = "#0f0f23"
 primaryColor = "#e8d44d"

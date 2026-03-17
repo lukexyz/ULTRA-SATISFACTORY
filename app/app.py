@@ -14,7 +14,14 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 # <head> before any JS/CSS loads. Idempotent — skips if already patched.
 # Re-applies after upgrades.
 def _patch_streamlit_index():
-    _INJECT_DARK = '<meta name="color-scheme" content="dark"><style>html,body{background:#000!important}</style>'
+    _INJECT_DARK = (
+        '<meta name="color-scheme" content="dark">'
+        '<style>'
+        'html, body, #root, [data-testid="stAppViewContainer"], [data-testid="stApp"], [data-testid="stHeader"], [data-testid="stMain"] {'
+        'background-color: #000 !important;'
+        '}'
+        '</style>'
+    )
     # ⚡ MutationObserver: Streamlit's DOMPurify injects target="_blank" on all
     # <a> tags. This script watches the DOM and flips any _blank to _self so
     # chip navigation always reloads in-place instead of opening a new tab.
@@ -39,9 +46,16 @@ def _patch_streamlit_index():
     try:
         html = index.read_text()
         changed = False
-        if _INJECT_DARK not in html:
+        if 'color-scheme" content="dark"' not in html:
             html = html.replace("<head>\n", f"<head>\n    {_INJECT_DARK}\n", 1)
             changed = True
+        else:
+            # Re-patch if older version
+            if "data-testid" not in html:
+                import re
+                html = re.sub(r'<meta name="color-scheme" content="dark">.*?</style>', _INJECT_DARK, html, flags=re.DOTALL)
+                changed = True
+                
         if _INJECT_LINK_FIX not in html:
             html = html.replace("</head>", f"    {_INJECT_LINK_FIX}\n</head>", 1)
             changed = True

@@ -8,6 +8,7 @@ __all__ = ['load_data', 'wiki_image_url', 'image_slug', 'local_image_url', 'get_
 
 # %% ../nbs/00_data.ipynb #7b488642
 import json
+import functools
 from pathlib import Path
 
 # %% ../nbs/00_data.ipynb #2c0d3d88
@@ -70,6 +71,7 @@ _IMAGES_BASE = _find_images_base()
 _CACHED_SIZES = [512, 256, 64]  # checked in order — prefer larger
 
 
+@functools.lru_cache(maxsize=None)
 def local_image_url(item_name: str, size: int = 64) -> str:
     """Return local static URL if the image exists, else fall back to wiki.gg.
 

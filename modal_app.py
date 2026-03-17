@@ -53,7 +53,7 @@ image = (
 app = modal.App(name="ultra-satisfactory", image=image)
 
 
-@app.function()
+@app.function(keep_warm=1)
 @modal.concurrent(max_inputs=100)
 @modal.web_server(8000)
 def run():
